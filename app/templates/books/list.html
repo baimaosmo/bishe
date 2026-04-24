@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}图书管理 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">馆藏图书管理</h2>
+            <p class="text-sm text-gray-500 mt-1">管理及检索馆内所有的图书资源与借阅状态。</p>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            {% if session.get('role') == 'admin' %}
+            <button class="flex items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition font-medium text-sm">
+                <i class="fas fa-file-export mr-2 text-gray-400"></i> 导出数据
+            </button>
+            <a href="{{ url_for('books.add_book') }}" class="flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-800 transition font-medium text-sm">
+                <i class="fas fa-plus mr-2"></i> 新增图书
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-lg text-sm flex items-center shadow-sm {% if category == 'error' %}bg-red-50 text-red-700 border-l-4 border-red-500{% else %}bg-green-50 text-green-700 border-l-4 border-green-500{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="GET" action="{{ url_for('books.book_list') }}" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-[240px] relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                <i class="fas fa-search text-gray-400"></i>
+            </span>
+            <input type="text" name="q" value="{{ search_query or '' }}" placeholder="输入书名、作者或 ISBN 按回车搜索..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm transition shadow-sm">
+        </div>
+        
+        <select name="category" class="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+            <option value="">全部分类</option>
+            <option value="计算机科学">计算机科学</option>
+            <option value="文学">文学</option>
+            <option value="自然科学">自然科学</option>
+        </select>
+
+        <button type="submit" class="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900 transition text-sm font-medium shadow-sm flex items-center">
+            <i class="fas fa-filter mr-2"></i> 筛选
+        </button>
+        
+        {% if search_query %}
+        <a href="{{ url_for('books.book_list') }}" class="text-gray-500 hover:text-gray-700 text-sm underline transition">清除过滤</a>
+        {% endif %}
+    </form>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">图书信息</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">分类</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">馆藏状态</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">入库时间</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for book in books %}
+                    <tr class="hover:bg-blue-50/50 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-bold text-gray-900">{{ book.title }}</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        <span class="font-medium">ISBN:</span> {{ book.isbn }} | {{ book.author or '佚名' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ book.category or '未分类' }}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if book.status == 'available' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-100 text-green-700 border border-green-200">
+                                    <i class="fas fa-check-circle mr-1 mt-0.5"></i> 可借阅
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+                                    <i class="fas fa-clock mr-1 mt-0.5"></i> 已借出
+                                </span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ book.add_time.strftime('%Y-%m-%d') }}
+                        </td>
+                        
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <div class="flex justify-center space-x-3">
+                                {% if session.get('role') == 'admin' %}
+                                    <a href="{{ url_for('books.edit_book', book_id=book.id) }}" 
+                                    class="text-indigo-500 hover:text-indigo-800 transition bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('books.delete_book', book_id=book.id) }}" 
+                                    onclick="return confirm('确定要永久删除这本书吗？')"
+                                    class="text-red-500 hover:text-red-800 transition bg-red-50 hover:bg-red-100 p-2 rounded-lg" title="删除">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('books.book_detail', book_id=book.id) }}" 
+                                    class="text-primary hover:text-blue-800 transition bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold">
+                                        查看详情
+                                    </a>
+                                    
+                                    {% if book.status == 'available' %}
+                                        <a href="{{ url_for('books.borrow_book', book_id=book.id) }}" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">
+                                            一键借阅
+                                        </a>
+                                    {% else %}
+                                        <button disabled class="bg-gray-200 text-gray-400 px-3 py-1.5 rounded-lg text-xs font-bold cursor-not-allowed">
+                                            已借出
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center text-gray-500">
+                            <div class="mx-auto w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
+                                <i class="fas fa-search text-3xl text-gray-300"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-1">未找到图书记录</h3>
+                            <p class="text-sm text-gray-400 mb-4">
+                                {% if search_query %}
+                                尝试更换搜索关键词，或者清除过滤条件。
+                                {% else %}
+                                馆藏库目前为空，请点击右上角新增图书录入数据。
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between">
+            <span class="text-sm text-gray-500">当前显示 <span class="font-bold text-gray-700">{{ books|length }}</span> 条记录</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

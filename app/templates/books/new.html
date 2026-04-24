@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}最新上架 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1rem;">✨ 最新上架</h1>
+<p style="color: var(--gray-600); margin-bottom: 2rem;">最近添加到图书馆的新书</p>
+
+{% if books %}
+<div class="grid grid-cols-4">
+    {% for book in books %}
+    <div class="book-card">
+        <div class="book-cover">
+            {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="{{ book.title }}">
+            {% else %}
+            📖
+            {% endif %}
+        </div>
+        <div class="book-info">
+            <div class="book-title">{{ book.title }}</div>
+            <div class="book-author">{{ book.author }}</div>
+            <div class="book-category">{{ book.category }}</div>
+            <div class="book-available" style="color: {% if book.available_copies > 0 %}var(--success){% else %}var(--danger){% endif %};">
+                {% if book.available_copies > 0 %}
+                可借 {{ book.available_copies }}/{{ book.total_copies }}
+                {% else %}
+                暂无可借
+                {% endif %}
+            </div>
+            <div class="book-actions">
+                <a href="{{ url_for('books.book_detail', book_id=book.id) }}" class="btn btn-primary btn-sm">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 2rem; background: var(--gray-100); border-radius: var(--border-radius);">
+    <p style="color: var(--gray-600);">暂无新书</p>
+</div>
+{% endif %}
+{% endblock %}

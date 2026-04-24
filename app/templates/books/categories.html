@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}分类浏览 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1rem;">📚 按分类浏览</h1>
+
+<div class="grid grid-cols-3" style="margin-top: 2rem;">
+    {% for cat in categories %}
+    <div class="card" style="text-align: center;">
+        <div class="card-body" style="padding: 2rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">
+                {% if cat == '技术' %}🔧
+                {% elif cat == '文学' %}📖
+                {% elif cat == '历史' %}📜
+                {% elif cat == '哲学' %}💭
+                {% elif cat == '艺术' %}🎨
+                {% else %}📚
+                {% endif %}
+            </div>
+            <h3 style="margin-bottom: 1rem;">{{ cat }}</h3>
+            <a href="{{ url_for('books.category_detail', category=cat) }}" class="btn btn-primary btn-sm">浏览</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

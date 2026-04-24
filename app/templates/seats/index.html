@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}多级选座 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-6xl mx-auto">
+    <div class="mb-8 text-center">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">沉浸式自习室选座</h2>
+        <p class="text-gray-500">请选择绿色空闲的座位。系统会自动回收使用超过 3 小时的座位。</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 max-w-2xl mx-auto">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-xl text-sm flex items-center shadow-sm justify-center {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="flex justify-center mb-8">
+        <div class="inline-flex p-1 bg-gray-200 rounded-2xl shadow-inner">
+            {% for f in [1, 2, 3] %}
+            <a href="{{ url_for('seats.index', floor=f) }}" 
+               class="px-8 py-2.5 rounded-xl font-bold transition-all {% if current_floor == f %}bg-white text-primary shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+               {{ f }}F
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if active_reservation %}
+    <div class="max-w-2xl mx-auto mb-10">
+        <div class="relative overflow-hidden bg-white border-2 {% if show_warning %}border-red-500 ring-4 ring-red-100 animate-pulse-subtle{% else %}border-blue-500{% endif %} rounded-2xl shadow-xl p-6 transition-all">
+            
+            {% if show_warning %}
+            <div class="absolute top-0 left-0 w-full bg-red-500 text-white text-[10px] font-bold py-1 text-center uppercase tracking-widest">
+                <i class="fas fa-exclamation-triangle mr-1"></i> 即将到期 强制释放预警
+            </div>
+            {% endif %}
+
+            <div class="flex justify-between items-center mt-2">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 {% if show_warning %}bg-red-100 text-red-600{% else %}bg-blue-100 text-blue-600{% endif %} rounded-full flex items-center justify-center text-xl mr-4">
+                        <i class="fas fa-couch"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black text-gray-800">{{ active_reservation.seat.seat_number }}</h3>
+                        <p class="text-xs text-gray-400">位于 {{ active_reservation.seat.floor }}F - {{ active_reservation.seat.area }}</p>
+                    </div>
+                </div>
+
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">剩余时间</p>
+                    <p class="text-2xl font-mono font-bold {% if show_warning %}text-red-600{% else %}text-blue-600{% endif %}">
+                        {{ remaining_minutes }} <span class="text-sm">MIN</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <a href="{{ url_for('seats.release_seat', reservation_id=active_reservation.id) }}" 
+                   class="flex-1 bg-gray-800 hover:bg-black text-white text-center py-3 rounded-xl font-bold transition shadow-sm">
+                    主动退座
+                </a>
+                {% if show_warning %}
+                <button class="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold cursor-not-allowed opacity-80" disabled>
+                    暂不支持续约
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex justify-center space-x-6 mb-8 text-sm text-gray-600">
+        <div class="flex items-center"><span class="w-4 h-4 rounded bg-green-100 border border-green-300 mr-2"></span> 空闲可选</div>
+        <div class="flex items-center"><span class="w-4 h-4 rounded bg-gray-200 border border-gray-300 mr-2"></span> 正在使用</div>
+        <div class="flex items-center"><i class="fas fa-bolt text-yellow-500 mr-1"></i> 带电源</div>
+    </div>
+
+    {% for area_name in areas %}
+    <div class="mb-12">
+        <div class="flex items-center mb-4 px-2">
+            <div class="w-1.5 h-6 bg-primary rounded-full mr-3"></div>
+            <h3 class="text-xl font-bold text-gray-800">{{ area_name }}</h3>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-3">
+                {% for seat in seats if seat.area == area_name %}
+                    {% if seat.status == 'free' %}
+                        <a href="{{ url_for('seats.book_seat', seat_id=seat.id) }}" 
+                           class="group relative bg-green-50 border border-green-200 rounded-lg py-4 flex flex-col items-center hover:bg-green-100 transition shadow-sm cursor-pointer">
+                            <span class="text-xs font-bold text-green-700 mb-1">{{ seat.seat_number.split('-')[-1] }}</span>
+                            <i class="fas fa-chair text-lg text-green-500 group-hover:-translate-y-0.5 transition transform"></i>
+                            {% if seat.has_power %}<i class="fas fa-bolt text-[8px] text-yellow-500 absolute top-1 right-1" title="有插座"></i>{% endif %}
+                        </a>
+                    {% else %}
+                        <div class="bg-gray-50 border border-gray-100 rounded-lg py-4 flex flex-col items-center opacity-50 cursor-not-allowed">
+                            <span class="text-xs font-bold text-gray-400 mb-1">{{ seat.seat_number.split('-')[-1] }}</span>
+                            <i class="fas fa-user text-lg text-gray-300"></i>
+                            {% if seat.has_power %}<i class="fas fa-bolt text-[8px] text-gray-400 absolute top-1 right-1"></i>{% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-20 bg-white rounded-3xl border border-gray-100">
+        <i class="fas fa-tools text-4xl text-gray-300 mb-4 block"></i>
+        <p class="text-gray-500">该楼层暂未开放或正在维护中</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    @keyframes pulse-subtle {
+        0%, 100% { opacity: 1; border-color: #ef4444; }
+        50% { opacity: 0.8; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); border-color: #f87171; }
+    }
+    .animate-pulse-subtle {
+        animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}

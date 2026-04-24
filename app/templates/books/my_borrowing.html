@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}我的借阅 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">我的借阅清单</h2>
+        <p class="text-sm text-gray-500 mt-1">查看您当前借阅中的书籍，请在到期前及时归还。</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg text-sm {% if category == 'error' %}bg-red-50 text-red-700{% else %}bg-green-50 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for record in records %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-lg text-xl">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-1 bg-orange-100 text-orange-600 rounded-full">借阅中</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-1">{{ record.book.title }}</h3>
+                <p class="text-sm text-gray-500 mb-4">ISBN: {{ record.book.isbn }}</p>
+                
+                <div class="text-xs text-gray-400 space-y-1 mb-6">
+                    <p><i class="far fa-clock mr-1"></i> 借出时间: {{ record.borrow_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><i class="fas fa-info-circle mr-1"></i> 状态: 请尽快阅读并归还</p>
+                </div>
+
+                <a href="{{ url_for('books.return_book', record_id=record.id) }}" 
+                   onclick="return confirm('确定要归还这本书吗？')"
+                   class="block text-center w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg transition">
+                    立即归还
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full py-20 text-center bg-white rounded-xl border-2 border-dashed border-gray-200">
+            <i class="fas fa-ghost text-4xl text-gray-200 mb-3 block"></i>
+            <p class="text-gray-400">您目前没有借阅任何书籍</p>
+            <a href="{{ url_for('books.book_list') }}" class="text-primary hover:underline text-sm font-medium mt-2 inline-block">去书库看看 &rarr;</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

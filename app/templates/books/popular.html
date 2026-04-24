@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}热门书籍 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1rem;">📈 热门书籍排行</h1>
+<p style="color: var(--gray-600); margin-bottom: 2rem;">根据借阅量排序，展示最受欢迎的图书</p>
+
+{% if books %}
+<div class="grid grid-cols-4">
+    {% for book in books %}
+    <div class="book-card">
+        <div class="book-cover">
+            {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="{{ book.title }}">
+            {% else %}
+            📖
+            {% endif %}
+        </div>
+        <div class="book-info">
+            <div class="book-title">{{ book.title }}</div>
+            <div class="book-author">{{ book.author }}</div>
+            <div class="book-category">{{ book.category }}</div>
+            <div class="book-available">
+                <span class="badge badge-primary">{{ book.get_popularity() }} 人借阅</span>
+            </div>
+            <div class="book-actions">
+                <a href="{{ url_for('books.book_detail', book_id=book.id) }}" class="btn btn-primary btn-sm">查看详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 2rem; background: var(--gray-100); border-radius: var(--border-radius);">
+    <p style="color: var(--gray-600);">暂无数据</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category }} - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <a href="{{ url_for('books.categories') }}" style="color: var(--gray-600);">← 返回分类</a>
+    <h1 style="margin-top: 0.5rem;">{{ category }}</h1>
+</div>
+
+{% if books %}
+<div class="grid grid-cols-4">
+    {% for book in books %}
+    <div class="book-card">
+        <div class="book-cover">
+            {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="{{ book.title }}">
+            {% else %}
+            📖
+            {% endif %}
+        </div>
+        <div class="book-info">
+            <div class="book-title">{{ book.title }}</div>
+            <div class="book-author">{{ book.author }}</div>
+            <div class="book-category">{{ book.category }}</div>
+            <div class="book-available" style="color: {% if book.available_copies > 0 %}var(--success){% else %}var(--danger){% endif %};">
+                {% if book.available_copies > 0 %}
+                可借 {{ book.available_copies }}/{{ book.total_copies }}
+                {% else %}
+                暂无可借
+                {% endif %}
+            </div>
+            <div class="book-actions">
+                <a href="{{ url_for('books.book_detail', book_id=book.id) }}" class="btn btn-primary btn-sm">详情</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('books.category_detail', category=category, page=pagination.prev_num) }}">« 上一页</a>
+    {% else %}
+    <span class="disabled">« 上一页</span>
+    {% endif %}
+
+    {% for page_num in pagination.iter_pages() %}
+        {% if page_num %}
+            {% if page_num == pagination.page %}
+            <span class="active">{{ page_num }}</span>
+            {% else %}
+            <a href="{{ url_for('books.category_detail', category=category, page=page_num) }}">{{ page_num }}</a>
+            {% endif %}
+        {% else %}
+        <span>...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+    <a href="{{ url_for('books.category_detail', category=category, page=pagination.next_num) }}">下一页 »</a>
+    {% else %}
+    <span class="disabled">下一页 »</span>
+    {% endif %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 2rem; background: var(--gray-100); border-radius: var(--border-radius);">
+    <p style="color: var(--gray-600);">此分类下暂无书籍</p>
+</div>
+{% endif %}
+{% endblock %}

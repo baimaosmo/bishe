@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}AI 智能匹配 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-5xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+    
+    <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-4">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mr-4 shadow-sm">
+                <i class="fas fa-brain"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                    AI 智能语义检书
+                    <span class="ml-3 px-2.5 py-0.5 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-full font-mono">Powered by AI</span>
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">用自然语言描述您的需求，AI 将为您在馆藏中精准寻书。（支持连续多轮对话）</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-container" class="flex-1 overflow-y-auto bg-gray-50 rounded-2xl p-6 shadow-inner space-y-6 border border-gray-100 mb-4">
+        <div class="flex items-start">
+            <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                <i class="fas fa-robot text-lg"></i>
+            </div>
+            <div class="ml-4 bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 text-sm max-w-[80%]">
+                您好！我是图书馆智能助手。您可以这样问我：<br>
+                <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-500">
+                    <li>"我想了解一下人工智能的发展历史，有什么书推荐？"</li>
+                    <li>"最近压力有点大，想看点能放松心情的小说。"</li>
+                    <li>"这几本书里，哪一本最适合完全没有基础的新手？"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 flex items-center">
+        <input type="text" id="user-input" 
+               class="flex-1 px-4 py-3 bg-transparent outline-none text-gray-700 placeholder-gray-400" 
+               placeholder="描述您想寻找什么样的书籍，或对上面的推荐进行追问..."
+               onkeypress="if(event.key === 'Enter') sendQuery()">
+        <button onclick="sendQuery()" id="send-btn"
+                class="bg-primary text-white w-12 h-12 rounded-xl hover:bg-blue-800 transition shadow-md flex items-center justify-center">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    const chatContainer = document.getElementById('chat-container');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    
+    // 【核心修改 1】：初始化时优先从 sessionStorage 读取，如果没有则为空数组
+    let chatHistory = JSON.parse(sessionStorage.getItem('ai_chat_history')) || [];
+
+    // 【核心修改 2】：页面一加载，就把存起来的历史记录渲染出来
+    window.addEventListener('DOMContentLoaded', () => {
+        if (chatHistory.length > 0) {
+            chatHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    appendMessage('user', msg.content);
+                } else if (msg.role === 'assistant') {
+                    appendMessage('ai', msg.content);
+                }
+            });
+        }
+    });
+
+    function appendMessage(role, content) {
+        const div = document.createElement('div');
+        div.className = "flex items-start " + (role === 'user' ? "justify-end" : "");
+        
+        let innerHTML = '';
+        if (role === 'user') {
+            innerHTML = `
+                <div class="mr-4 bg-blue-500 text-white p-4 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[80%]">
+                    ${content}
+                </div>
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-user text-gray-500"></i>
+                </div>
+            `;
+        } else if (role === 'ai') {
+            const parsedContent = marked.parse(content);
+            innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                    <i class="fas fa-robot text-lg"></i>
+                </div>
+                <div class="ml-4 bg-white p-5 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 text-sm max-w-[80%] prose prose-sm prose-blue">
+                    ${parsedContent}
+                </div>
+            `;
+        } else if (role === 'loading') {
+            div.id = 'loading-bubble';
+            innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                    <i class="fas fa-robot text-lg"></i>
+                </div>
+                <div class="ml-4 bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-500 text-sm flex items-center space-x-2">
+                    <span>智能助手正在为您寻找匹配的馆藏资源</span>
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        div.innerHTML = innerHTML;
+        chatContainer.appendChild(div);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function sendQuery() {
+        const query = userInput.value.trim();
+        if (!query) return;
+
+        chatHistory.push({ "role": "user", "content": query });
+        // 【核心修改 3】：用户发消息后，实时保存到 sessionStorage
+        sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
+
+        appendMessage('user', query);
+        userInput.value = '';
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+
+        appendMessage('loading', '');
+
+        try {
+            const response = await fetch("{{ url_for('ai.api_match') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ history: chatHistory })
+            });
+            
+            const data = await response.json();
+            document.getElementById('loading-bubble').remove();
+
+            if (response.ok) {
+                chatHistory.push({ "role": "assistant", "content": data.reply });
+                // 【核心修改 4】：AI 回复后，再次保存到 sessionStorage
+                sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
+                appendMessage('ai', data.reply);
+            } else {
+                chatHistory.pop(); 
+                sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
+                appendMessage('ai', `**抱歉，发生错误：** ${data.error}`);
+            }
+        } catch (error) {
+            document.getElementById('loading-bubble').remove();
+            chatHistory.pop();
+            sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
+            appendMessage('ai', '**网络请求失败**，请检查控制台或稍后再试。');
+        } finally {
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+    }
+</script>
+
+<style>
+    .prose p { margin-bottom: 0.5em; }
+    .prose strong { color: #1e3a8a; }
+    .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+</style>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}控制台看板 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-800">系统概览</h2>
+        <p class="text-sm text-gray-500 mt-1">查看今日图书馆运行状态与实时动态。</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center transition hover:shadow-md">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                <i class="fas fa-book text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">馆藏总数</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.total_books }}</p>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center transition hover:shadow-md">
+            <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                <i class="fas fa-hand-holding text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">今日借出</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.borrowed_today }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center transition hover:shadow-md">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                <i class="fas fa-chair text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">空闲座位</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.free_seats }} <span class="text-sm text-gray-400 font-normal">/ {{ stats.total_seats }}</span></p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center transition hover:shadow-md">
+            <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
+                <i class="fas fa-brain text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">AI 搜索调用</p>
+                <p class="text-2xl font-bold text-gray-800">{{ stats.ai_calls }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-bolt text-yellow-500 mr-2"></i> 实时动态
+        </h3>
+        
+        <div class="space-y-4">
+            {% for activity in activities %}
+            <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-sm">
+                        {{ activity.user[0] }}
+                    </div>
+                    <p class="text-sm text-gray-700">
+                        <span class="font-semibold">{{ activity.user }}</span> 
+                        {{ activity.action }} 
+                        <span class="text-primary">{{ activity.item }}</span>
+                    </p>
+                </div>
+                <span class="text-xs text-gray-400">{{ activity.time }}</span>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-gray-500 text-sm">暂无近期动态</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
