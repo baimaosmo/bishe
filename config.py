@@ -11,4 +11,4 @@ class Config:
     
     # 关闭 SQLAlchemy 对模型修改的事件追踪，以节省系统内存
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    DEEPSEEK_API_KEY = 'sk-a348e09846e74e9d8e5ed73f76c5299a'                                              
+    DEEPSEEK_API_KEY = '你的api'                                              
