@@ -1,26 +1,83 @@
 import json
 import requests
 import urllib3
-from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for,flash
 from app.models import Book
+import random
+from datetime import datetime, timedelta
 
 # 隐藏因为跳过 SSL 校验而产生的控制台警告信息
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-ai_bp = Blueprint('ai', __name__)
+ai_bp = Blueprint('ai', __name__, url_prefix='/ai')
+
+@ai_bp.route('/report')
+def generate_report():
+    # 权限校验：仅限管理员
+    if session.get('role') != 'admin':
+        flash('权限不足，仅管理员可查看数据大屏！', 'error')
+        return redirect(url_for('books.book_list'))
+
+    # ================= 模拟本月数据生成 =================
+    
+    # 1. 生成近 30 天的日期列表
+    today = datetime.now()
+    date_list = [(today - timedelta(days=i)).strftime('%m-%d') for i in range(29, -1, -1)]
+    
+    # 2. 图书借阅趋势数据 (折线图)
+    borrow_trend = [random.randint(20, 100) for _ in range(30)]
+    
+    # 3. 热门图书分类数据 (饼图)
+    book_categories = [
+        {"value": 335, "name": "计算机科学"},
+        {"value": 310, "name": "文学"},
+        {"value": 234, "name": "自然科学"},
+        {"value": 135, "name": "哲学"},
+        {"value": 1548, "name": "其他"}
+    ]
+    
+    # 4. 座位热力图数据 (星期一到星期日，每天 8个时间段的使用率)
+    # ECharts 热力图数据格式: [x(星期), y(时间段), value(使用人数/热度)]
+    heatmap_data = []
+    for day in range(7):
+        for time_slot in range(8):
+            # 模拟：下午和晚上人多，周末人多
+            base_heat = random.randint(10, 50)
+            if time_slot in [3, 4, 5]: # 下午 14:00-20:00
+                base_heat += random.randint(30, 50)
+            if day in [5, 6]: # 周末
+                base_heat += random.randint(20, 40)
+            heatmap_data.append([day, time_slot, base_heat])
+
+    # 5. AI 生成的文本摘要（这里可以接真实的 AI 接口，暂时用预设文本）
+    ai_summary = f"""
+    基于本月的大数据分析：
+    本月图书馆总借阅量达到稳步增长，其中【计算机科学】类图书最受学生欢迎。
+    在自习室选座方面，周六和周日的下午 14:00 - 18:00 是全馆座位的满负荷高峰期（热力图呈深红色）。
+    建议管理员在周末高峰时段加强占座巡视，并考虑在下个月增加【计算机科学】相关新书的采购预算。
+    """
+
+    return render_template(
+        'ai/report.html', 
+        date_list=json.dumps(date_list),
+        borrow_trend=json.dumps(borrow_trend),
+        book_categories=json.dumps(book_categories),
+        heatmap_data=json.dumps(heatmap_data),
+        ai_summary=ai_summary
+    )
 
 @ai_bp.route('/smart-search')
 def search_page():
     """渲染智能搜索页面"""
     # 修复：增加了未登录的拦截重定向
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
     return render_template('ai/search.html')
 
 @ai_bp.route('/api/match', methods=['POST'])
 def api_match():
     """接收前端提问与历史记录，调用 DeepSeek API"""
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return jsonify({'error': '未登录'}), 401
 
     # 【修改点 1】不再只接收单句 query，而是接收整个 history 数组
@@ -84,7 +141,7 @@ def api_match():
 @ai_bp.route('/report')
 def report_page():
     """渲染摘要与报告生成页面"""
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
     
     # 获取馆藏图书列表，供用户在下拉菜单中选择
@@ -93,7 +150,7 @@ def report_page():
 
 @ai_bp.route('/api/generate-report', methods=['POST'])
 def api_generate_report():
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return jsonify({'error': '未登录'}), 401
 
     data = request.json

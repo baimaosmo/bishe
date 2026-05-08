@@ -7,7 +7,7 @@ books_bp = Blueprint('books', __name__)
 # 1. 图书列表展示路由
 @books_bp.route('/list')
 def book_list():
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
 
     # 获取前端传递的搜索关键字
@@ -32,10 +32,9 @@ def book_list():
     return render_template('books/list.html', books=books, search_query=search_query)
 
 # 2. 添加新图书路由
+# 2. 添加新图书路由
 @books_bp.route('/add', methods=['GET', 'POST'])
 def add_book():
-    # 权限检查：通常只有管理员能添加图书
-    # 如果你想让普通用户也能测试添加，可以把下面两行注释掉
     if session.get('role') != 'admin':
         flash('权限不足，仅管理员可添加图书！', 'error')
         return redirect(url_for('books.book_list'))
@@ -47,86 +46,91 @@ def add_book():
         author = request.form.get('author')
         publisher = request.form.get('publisher')
         category = request.form.get('category')
+        description = request.form.get('description')
+        
+        # ================= 新增：接住位置信息 =================
+        floor = request.form.get('floor', type=int) 
+        area = request.form.get('area')
+        shelf = request.form.get('shelf')
+        # =====================================================
 
-        # 简单校验 ISBN 是否已存在
         if Book.query.filter_by(isbn=isbn).first():
             flash(f'添加失败：ISBN {isbn} 已存在！', 'error')
         else:
-            # 创建新的图书对象
+            # 创建新的图书对象，把位置信息传进去
             new_book = Book(
                 isbn=isbn,
                 title=title,
                 author=author,
                 publisher=publisher,
                 category=category,
-                status='available' # 默认状态为可借阅
+                description=description,
+                floor=floor,  # 存入楼层
+                area=area,    # 存入区域
+                shelf=shelf,  # 存入书架
+                status='available' 
             )
-            # 保存到数据库
             db.session.add(new_book)
             db.session.commit()
             
             flash(f'成功添加图书：《{title}》', 'success')
             return redirect(url_for('books.book_list'))
 
-    # 如果是 GET 请求，渲染添加图书的表单页面
     return render_template('books/add.html')
 # 1. 处理借阅请求
 @books_bp.route('/borrow/<int:book_id>')
 def borrow_book(book_id):
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
     
     book = Book.query.get_or_404(book_id)
-    
-    # 安全检查：只有状态为 'available' 的书才能借
     if book.status != 'available':
         flash('该书已被借出或不可用！', 'error')
         return redirect(url_for('books.book_list'))
     
-    # 开启事务处理
     try:
-        # 创建借阅记录
-        new_record = BorrowRecord(
-            user_id=session['user_id'],
-            book_id=book.id,
-            status='borrowing'
-        )
-        # 修改图书状态
-        book.status = 'borrowed'
+        new_record = BorrowRecord(book_id=book.id, status='borrowing')
         
+        # 【核心】：判断当前登录的是什么身份，存入对应的外键
+        if session.get('account_type') == 'student':
+            new_record.student_id = session['account_id']
+        else:
+            new_record.user_id = session['account_id']
+            
+        book.status = 'borrowed'
         db.session.add(new_record)
         db.session.commit()
-        flash(f'成功借阅：《{book.title}》，请按时归还。', 'success')
+        flash(f'成功借阅：《{book.title}》', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('系统繁忙，借阅失败！', 'error')
+        flash('借阅失败！', 'error')
         
     return redirect(url_for('books.book_list'))
 
 # 2. 查看“我的借阅”记录
 @books_bp.route('/my_borrowing')
 def my_borrowing():
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
     
-    # 查询当前用户所有未归还的记录
-    records = BorrowRecord.query.filter_by(
-        user_id=session['user_id'], 
-        status='borrowing'
-    ).all()
-    
+    # 【核心】：根据身份去对应的外键字段里查数据
+    if session.get('account_type') == 'student':
+        records = BorrowRecord.query.filter_by(student_id=session['account_id'], status='borrowing').all()
+    else:
+        records = BorrowRecord.query.filter_by(user_id=session['account_id'], status='borrowing').all()
+        
     return render_template('books/my_borrowing.html', records=records)
 
 # 3. 处理归还请求
 @books_bp.route('/return/<int:record_id>')
 def return_book(record_id):
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
     
     record = BorrowRecord.query.get_or_404(record_id)
     
     # 权限检查：只能归还自己的书，除非是管理员
-    if record.user_id != session['user_id'] and session.get('role') != 'admin':
+    if record.user_id != session['account_id'] and session.get('role') != 'admin':
         flash('您没有权限操作此记录！', 'error')
         return redirect(url_for('books.my_borrowing'))
 
@@ -149,11 +153,12 @@ def return_book(record_id):
 # 1. 图书详情页面
 @books_bp.route('/detail/<int:book_id>')
 def book_detail(book_id):
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
     book = Book.query.get_or_404(book_id)
     return render_template('books/detail.html', book=book)
 
+# 2. 编辑图书页面（仅限管理员）
 # 2. 编辑图书页面（仅限管理员）
 @books_bp.route('/edit/<int:book_id>', methods=['GET', 'POST'])
 def edit_book(book_id):
@@ -168,6 +173,13 @@ def edit_book(book_id):
         book.author = request.form.get('author')
         book.publisher = request.form.get('publisher')
         book.category = request.form.get('category')
+        book.description = request.form.get('description')
+        
+        # ================= 新增：接住并更新位置信息 =================
+        book.floor = request.form.get('floor', type=int)
+        book.area = request.form.get('area')
+        book.shelf = request.form.get('shelf')
+        # ===========================================================
         
         db.session.commit()
         flash(f'图书《{book.title}》修改成功！', 'success')

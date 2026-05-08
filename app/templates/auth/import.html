@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}批量导入学生 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-3xl mx-auto pb-10">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-file-excel text-green-600 mr-3"></i>批量导入学生数据
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">上传 Excel 或 CSV 表格，为本校学生一键开通图书馆账号。</p>
+        </div>
+        <a href="{{ url_for('books.book_list') }}" class="text-gray-500 hover:text-primary transition font-medium text-sm flex items-center">
+            <i class="fas fa-arrow-left mr-1"></i> 返回主页
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-lg text-sm flex items-center shadow-sm {% if category == 'error' %}bg-red-50 text-red-700 border-l-4 border-red-500{% else %}bg-green-50 text-green-700 border-l-4 border-green-500{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-8">
+        
+        <!-- 表格格式说明 -->
+        <div class="bg-blue-50 rounded-xl p-5 mb-8 border border-blue-100">
+            <h4 class="font-bold text-blue-800 mb-2 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>导入要求说明
+            </h4>
+            <ul class="text-sm text-blue-700 space-y-1.5 list-disc pl-5">
+                <li>请确保您的表格第一行（表头）严格包含这三列：<strong>学号</strong>、<strong>姓名</strong>、<strong>院系</strong>。</li>
+                <li>文件格式仅支持 <strong>.xlsx</strong>、<strong>.xls</strong> 或 <strong>.csv</strong>。</li>
+                <li>系统会自动跳过库中已存在的学号，所有新导入的学生初始密码均为 <strong>123456</strong>。</li>
+            </ul>
+        </div>
+
+        <!-- 上传表单 -->
+        <!-- 注意：文件上传表单必须包含 enctype="multipart/form-data" -->
+        <form action="{{ url_for('auth.import_students') }}" method="POST" enctype="multipart/form-data">
+            
+            <div class="flex items-center justify-center w-full mb-6">
+                <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                        <p class="mb-2 text-sm text-gray-600"><span class="font-bold">点击选择文件</span> 或将表格拖拽到此处</p>
+                        <p class="text-xs text-gray-400">支持 EXCEL / CSV</p>
+                    </div>
+                    <!-- 文件输入框 -->
+                    <input id="dropzone-file" type="file" name="file" accept=".xlsx, .xls, .csv" class="hidden" required onchange="showFileName(this)" />
+                </label>
+            </div>
+
+            <!-- 用于显示选中的文件名 -->
+            <div id="file-name-display" class="hidden text-center mb-6 text-sm font-bold text-green-600">
+                <i class="fas fa-file-excel mr-2"></i><span id="file-name-text"></span>
+            </div>
+
+            <div class="flex justify-center">
+                <button type="submit" class="px-8 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition shadow-md flex items-center">
+                    <i class="fas fa-bolt mr-2"></i> 开始解析并导入
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 简单的 JS，用于在选中文件后在页面上显示文件名
+    function showFileName(input) {
+        const displayDiv = document.getElementById('file-name-display');
+        const textSpan = document.getElementById('file-name-text');
+        if (input.files && input.files[0]) {
+            textSpan.textContent = "已选择文件: " + input.files[0].name;
+            displayDiv.classList.remove('hidden');
+        } else {
+            displayDiv.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}

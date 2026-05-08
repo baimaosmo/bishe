@@ -39,9 +39,11 @@ def create_app(config_class=Config):
     app.register_blueprint(seats_bp, url_prefix='/seats')
 
     # AI 智能工具模块 (对应的 URL 路径前缀为 /ai)
-    # from app.routes.ai_tools import ai_bp
-    # app.register_blueprint(ai_bp, url_prefix='/ai')
     from app.routes.ai_tools import ai_bp
     app.register_blueprint(ai_bp, url_prefix='/ai')
+
+    # 图书漂流角模块 (对应的 URL 路径前缀为 /crossing)
+    from app.routes.book_crossing import crossing_bp
+    app.register_blueprint(crossing_bp, url_prefix='/crossing')
 
     return app

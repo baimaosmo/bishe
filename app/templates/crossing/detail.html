@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - 图书漂流角{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('crossing.index') }}" class="text-sm text-gray-500 hover:text-primary transition-colors">
+            <i class="fas fa-arrow-left mr-1.5"></i>返回漂流广场
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-2xl text-sm font-medium flex items-center shadow-lg {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-times-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 左侧：图书详情 -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-gray-800">{{ book.title }}</h2>
+                        {% if book.course_related %}
+                        <p class="text-sm text-primary/70 font-medium mt-1">
+                            <i class="fas fa-graduation-cap mr-1.5"></i>{{ book.course_related }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-4 py-1.5 rounded-full text-xs font-bold
+                                     {% if book.status == 'drifting' %}bg-green-100 text-green-700{% else %}bg-purple-100 text-purple-700{% endif %}">
+                            {{ '漂流中' if book.status == 'drifting' else '已领走' }}
+                        </span>
+                        {% if session.get('role') == 'admin' %}
+                        <a href="{{ url_for('crossing.edit_book', book_id=book.id) }}"
+                           class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors">
+                            <i class="fas fa-edit mr-1"></i>编辑
+                        </a>
+                        <form method="POST" action="{{ url_for('crossing.delete_book', book_id=book.id) }}"
+                              onsubmit="return confirm('确定要删除《{{ book.title }}》吗？此操作不可撤销。')">
+                            <button type="submit" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors">
+                                <i class="fas fa-trash mr-1"></i>删除
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 基本信息卡片 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">新旧程度</p>
+                        <p class="text-sm font-extrabold
+                                  {% if book.condition == '全新' %}text-blue-600
+                                  {% elif book.condition == '良好' %}text-green-600
+                                  {% elif book.condition == '一般' %}text-yellow-600
+                                  {% else %}text-orange-600{% endif %}">{{ book.condition }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">提供者</p>
+                        <p class="text-sm font-extrabold text-gray-700">{{ book.provider_name }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">发布时间</p>
+                        <p class="text-sm font-extrabold text-gray-700">{{ book.publish_time.strftime('%m-%d %H:%M') }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">领取者</p>
+                        <p class="text-sm font-extrabold text-gray-700">{{ book.receiver_name or '暂无' }}</p>
+                    </div>
+                </div>
+
+                {% if book.description %}
+                <div class="border-t border-gray-100 pt-5">
+                    <h4 class="text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-info-circle mr-1.5 text-gray-400"></i>详细说明
+                    </h4>
+                    <p class="text-gray-600 text-sm leading-relaxed">{{ book.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 提供者视角：查看申请列表 -->
+            {% if (is_provider or session.get('role') == 'admin') and requests_list %}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-6">
+                <h3 class="text-lg font-extrabold text-gray-800 mb-5">
+                    <i class="fas fa-clipboard-list mr-2 text-primary"></i>领取申请
+                    <span class="ml-2 px-2 py-0.5 bg-gray-100 rounded-full text-xs font-normal text-gray-500">{{ requests_list|length }}</span>
+                </h3>
+
+                <div class="space-y-4">
+                {% for req in requests_list %}
+                    <div class="border border-gray-100 rounded-xl p-4 {% if req.status == 'accepted' %}bg-green-50 border-green-200{% elif req.status == 'rejected' %}bg-red-50/30 border-red-100{% endif %}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                                    <i class="fas fa-user text-gray-500"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-700 text-sm">{{ req.receiver_name }}</p>
+                                    <p class="text-xs text-gray-400">{{ req.create_time.strftime('%m-%d %H:%M') }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 rounded-full text-[10px] font-bold
+                                             {% if req.status == 'pending' %}bg-yellow-100 text-yellow-700
+                                             {% elif req.status == 'accepted' %}bg-green-100 text-green-700
+                                             {% else %}bg-gray-100 text-gray-500{% endif %}">
+                                    {{ {'pending': '待处理', 'accepted': '已同意', 'rejected': '已拒绝'}[req.status] }}
+                                </span>
+                                {% if session.get('role') == 'admin' %}
+                                <form method="POST" action="{{ url_for('crossing.delete_request', request_id=req.id) }}"
+                                      onsubmit="return confirm('确定要删除该申请记录吗？')" class="inline">
+                                    <button type="submit" class="text-red-400 hover:text-red-600 transition-colors" title="删除申请">
+                                        <i class="fas fa-trash-alt text-[10px]"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if req.message %}
+                        <p class="mt-3 text-sm text-gray-600 bg-white rounded-lg p-3">
+                            <i class="fas fa-quote-left text-gray-300 mr-1"></i>{{ req.message }}
+                        </p>
+                        {% endif %}
+                        {% if req.status == 'pending' and book.status == 'drifting' %}
+                        <div class="mt-3 flex gap-2">
+                            <form method="POST" action="{{ url_for('crossing.handle_request', request_id=req.id, action='accept') }}" class="flex-1">
+                                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-bold transition-all">
+                                    <i class="fas fa-check mr-1"></i>同意
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('crossing.handle_request', request_id=req.id, action='reject') }}" class="flex-1">
+                                <button type="submit" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-600 py-2 rounded-lg text-sm font-bold transition-all">
+                                    <i class="fas fa-times mr-1"></i>拒绝
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 右侧：申请操作 -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-6">
+                {% if is_provider or session.get('role') == 'admin' %}
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full {% if session.get('role') == 'admin' %}bg-red-100{% else %}bg-blue-100{% endif %} flex items-center justify-center">
+                            <i class="fas {% if session.get('role') == 'admin' %}fa-crown text-red-500{% else %}fa-user-check text-blue-500{% endif %} text-2xl"></i>
+                        </div>
+                        <p class="font-bold text-gray-700">
+                            {% if session.get('role') == 'admin' %}管理员视角{% else %}这是您发布的图书{% endif %}
+                        </p>
+                        <p class="text-sm text-gray-400 mt-1">
+                            {% if book.status == 'drifting' %}等待其他同学申请{% else %}已被领走{% endif %}
+                        </p>
+                    </div>
+                {% elif book.status == 'claimed' %}
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                            <i class="fas fa-box text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="font-bold text-gray-500">该书已被领走</p>
+                        <p class="text-sm text-gray-400 mt-1">去看看其他漂流图书吧</p>
+                    </div>
+                {% elif already_requested %}
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <i class="fas fa-clock text-2xl text-yellow-500"></i>
+                        </div>
+                        <p class="font-bold text-gray-700">已提交申请</p>
+                        <p class="text-sm text-gray-400 mt-1">请等待提供者确认</p>
+                        <p class="text-xs text-gray-400 mt-2 px-3 py-1.5 bg-yellow-50 rounded-lg">
+                            状态：{{ {'pending': '待处理', 'accepted': '已同意', 'rejected': '已拒绝'}[already_requested.status] }}
+                        </p>
+                    </div>
+                {% else %}
+                    <h3 class="text-lg font-extrabold text-gray-800 mb-4">
+                        <i class="fas fa-hand-holding-heart mr-2 text-primary"></i>申请领取
+                    </h3>
+                    <form method="POST" action="{{ url_for('crossing.request_book', book_id=book.id) }}">
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-comment mr-1.5 text-gray-400"></i>给提供者的留言
+                            </label>
+                            <textarea name="message" rows="4"
+                                      class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none resize-none text-sm"
+                                      placeholder="简单介绍一下自己，或说明为什么需要这本书..."></textarea>
+                        </div>
+                        <button type="submit"
+                                class="w-full bg-primary hover:bg-blue-900 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl active:scale-[0.98]">
+                            <i class="fas fa-paper-plane mr-2"></i>提交申请
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -28,7 +28,7 @@ def cleanup_expired_reservations():
 # 1. 座位可视化大厅
 @seats_bp.route('/')
 def index():
-    if 'user_id' not in session:
+    if 'account_id' not in session:
         return redirect(url_for('auth.login'))
 
     cleanup_expired_reservations()
@@ -36,7 +36,7 @@ def index():
     current_floor = request.args.get('floor', 1, type=int)
     
     active_reservation = SeatReservation.query.filter_by(
-        user_id=session['user_id'], 
+        user_id=session['account_id'], 
         status='active'
     ).first()
 
@@ -54,22 +54,49 @@ def index():
     seats = Seat.query.filter_by(floor=current_floor).order_by(Seat.seat_number).all()
     areas = sorted(list(set([s.area for s in seats])))
 
-    return render_template('seats/index.html', 
-                         seats=seats, 
+    # 按区域 → 行(seat_number前缀) 分组，构建更立体的数据结构
+    areas_data = {}
+    for area_name in areas:
+        rows = {}
+        for seat in seats:
+            if seat.area != area_name:
+                continue
+            raw = seat.seat_number.rsplit('-', 1)[0] if '-' in seat.seat_number else ''
+            # 去掉楼层前缀(如 "1F-A" → "A")，让行标签更简洁
+            parts = raw.split('-')
+            prefix = parts[-1] if len(parts) > 1 else raw
+            if prefix not in rows:
+                rows[prefix] = []
+            rows[prefix].append(seat)
+        areas_data[area_name] = rows
+
+    # 楼层统计数据
+    total_seats = len(seats)
+    free_seats = sum(1 for s in seats if s.status == 'free')
+    occupied_seats = total_seats - free_seats
+    occupancy_rate = round(occupied_seats / total_seats * 100) if total_seats > 0 else 0
+
+    return render_template('seats/index.html',
+                         seats=seats,
                          areas=areas,
+                         areas_data=areas_data,
                          current_floor=current_floor,
                          active_reservation=active_reservation,
                          remaining_minutes=remaining_minutes,
-                         show_warning=show_warning)
+                         show_warning=show_warning,
+                         total_seats=total_seats,
+                         free_seats=free_seats,
+                         occupied_seats=occupied_seats,
+                         occupancy_rate=occupancy_rate)
 
 # ================= 补回缺失的选座路由 =================
 # 2. 选座请求处理
 @seats_bp.route('/book/<int:seat_id>')
 def book_seat(seat_id):
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    if 'account_id' not in session: return redirect(url_for('auth.login'))
     
     # 检查用户是否已经占了一个座位
-    existing = SeatReservation.query.filter_by(user_id=session['user_id'], status='active').first()
+    existing = SeatReservation.query.filter_by(user_id=session['account_id'], status='active').first()
     if existing:
         flash('您当前已经预约了一个座位，请先释放后再选新座！', 'error')
         return redirect(url_for('seats.index'))
@@ -81,7 +108,7 @@ def book_seat(seat_id):
 
     try:
         # 创建预约记录并更新座位状态
-        reservation = SeatReservation(user_id=session['user_id'], seat_id=seat.id)
+        reservation = SeatReservation(user_id=session['account_id'], seat_id=seat.id)
         seat.status = 'occupied'
         
         db.session.add(reservation)
@@ -97,11 +124,11 @@ def book_seat(seat_id):
 # 3. 退座/释放请求处理
 @seats_bp.route('/release/<int:reservation_id>')
 def release_seat(reservation_id):
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    if 'account_id' not in session: return redirect(url_for('auth.login'))
     
     reservation = SeatReservation.query.get_or_404(reservation_id)
     
-    if reservation.user_id != session['user_id'] and session.get('role') != 'admin':
+    if reservation.user_id != session['account_id'] and session.get('role') != 'admin':
         flash('无权操作！', 'error')
         return redirect(url_for('seats.index'))
 

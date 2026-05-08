@@ -2,62 +2,83 @@ from app import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# 1. 注册用户表（校外读者/管理员）
 class User(db.Model):
-    """用户表模型"""
     __tablename__ = 'users'
-    
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(50), unique=True, nullable=False, index=True, comment='用户名')
-    password_hash = db.Column(db.String(255), nullable=False, comment='加密后的密码')
-    role = db.Column(db.String(20), default='user', comment='角色: admin(管理员), user(普通用户)')
-    register_time = db.Column(db.DateTime, default=datetime.utcnow, comment='注册时间')
+    username = db.Column(db.String(50), unique=True, nullable=False, comment='用户名')
+    email = db.Column(db.String(120), unique=True, comment='邮箱')
+    password_hash = db.Column(db.String(255), nullable=False, comment='密码')
+    role = db.Column(db.String(20), default='user', comment='角色: user/admin')
 
     def set_password(self, password):
-        """将明文密码加密后存入 password_hash"""
-        # 显式指定使用 pbkdf2:sha256 加密方式，解决 Anaconda 环境下 scrypt 报错的问题
-        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def __repr__(self):
-        return f'<User {self.username}>'
+# 2. 导入学生表（校内学生） - 新增表！
+class Student(db.Model):
+    __tablename__ = 'students'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    student_no = db.Column(db.String(20), unique=True, nullable=False, comment='学号')
+    name = db.Column(db.String(50), nullable=False, comment='真实姓名')
+    department = db.Column(db.String(50), default='计算机学院', comment='院系')
+    password_hash = db.Column(db.String(255), nullable=False, comment='密码')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+# 3. 借阅记录表（核心升级：双外键设计）
+class BorrowRecord(db.Model):
+    __tablename__ = 'borrow_records'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    # 既可以关联普通 User，也可以关联 Student (两个字段其中一个为空)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, comment='关联注册用户')
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True, comment='关联导入学生')
+    book_id = db.Column(db.Integer, db.ForeignKey('books.id'), nullable=False, comment='关联图书')
+    
+    borrow_time = db.Column(db.DateTime, default=datetime.now, comment='借阅时间')
+    return_time = db.Column(db.DateTime, nullable=True, comment='归还时间')
+    status = db.Column(db.String(20), default='borrowing', comment='状态: borrowing/returned')
+
+    # 建立关系，方便在前端调用 record.book.title 等
+    user = db.relationship('User', backref=db.backref('borrow_records', lazy=True))
+    student = db.relationship('Student', backref=db.backref('borrow_records', lazy=True))
+    book = db.relationship('Book', backref=db.backref('borrow_records', lazy=True))
 
 class Book(db.Model):
-    """图书信息表模型"""
+    """图书基础信息表"""
     __tablename__ = 'books'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    isbn = db.Column(db.String(20), unique=True, index=True, nullable=False, comment='国际标准书号')
     title = db.Column(db.String(100), nullable=False, comment='书名')
-    author = db.Column(db.String(50), comment='作者')
-    publisher = db.Column(db.String(50), comment='出版社')
-    category = db.Column(db.String(30), comment='分类')
+    author = db.Column(db.String(50), nullable=False, comment='作者')
+    
+    # ================= 补回出版社字段 =================
+    publisher = db.Column(db.String(100), comment='出版社')
+    # ==================================================
+    
+    isbn = db.Column(db.String(20), unique=True, nullable=False, comment='ISBN号')
+    category = db.Column(db.String(50), comment='分类')
+    
+    # 馆藏位置信息
+    floor = db.Column(db.Integer, default=1, comment='所在楼层')
+    area = db.Column(db.String(20), default='A区', comment='所在区域')
+    shelf = db.Column(db.String(20), default='01架', comment='书架号')
+
     status = db.Column(db.String(20), default='available', comment='状态: available(可借), borrowed(已借出)')
-    add_time = db.Column(db.DateTime, default=datetime.utcnow, comment='入库时间')
+    description = db.Column(db.Text, comment='简介')
+    add_time = db.Column(db.DateTime, default=datetime.now, comment='入库时间')
 
     def __repr__(self):
         return f'<Book {self.title}>'
 
-# ================= 新增：借阅记录表 =================
-class BorrowRecord(db.Model):
-    """借阅记录表模型 (关联 User 和 Book)"""
-    __tablename__ = 'borrow_records'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    # 外键关联到 users 表的 id
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, comment='借阅用户的ID')
-    # 外键关联到 books 表的 id
-    book_id = db.Column(db.Integer, db.ForeignKey('books.id'), nullable=False, comment='借阅图书的ID')
-    
-    borrow_time = db.Column(db.DateTime, default=datetime.utcnow, comment='借出时间')
-    return_time = db.Column(db.DateTime, nullable=True, comment='实际归还时间')
-    
-    status = db.Column(db.String(20), default='borrowing', comment='状态: borrowing(借阅中), returned(已归还)')
-
-    # 设置反向引用关系，方便通过 user.borrow_records 直接查询用户的借阅历史
-    user = db.relationship('User', backref=db.backref('borrow_records', lazy=True))
-    book = db.relationship('Book', backref=db.backref('borrow_records', lazy=True))
 
   # ================= 新增：座位管理表 =================
 class Seat(db.Model):
@@ -91,3 +112,83 @@ class SeatReservation(db.Model):
 
     def __repr__(self):
         return f'<SeatReservation User:{self.user_id} Seat:{self.seat_id}>'
+
+# ================= 新增：图书漂流角 =================
+class DriftBook(db.Model):
+    """漂流图书表"""
+    __tablename__ = 'drift_books'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(100), nullable=False, comment='书名')
+    course_related = db.Column(db.String(100), comment='关联课程')
+    condition = db.Column(db.String(20), default='良好', comment='新旧程度: 全新/良好/一般/较旧')
+    description = db.Column(db.Text, comment='补充描述/交换条件')
+    status = db.Column(db.String(20), default='drifting', comment='状态: drifting(漂流中)/claimed(已领走)')
+    publish_time = db.Column(db.DateTime, default=datetime.now, comment='发布时间')
+
+    # 提供者：双外键（User 或 Student）
+    provider_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    provider_student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True)
+    # 领取者：双外键
+    receiver_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    receiver_student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True)
+
+    provider_user = db.relationship('User', foreign_keys=[provider_user_id],
+                                    backref=db.backref('drift_books_provided', lazy=True))
+    provider_student = db.relationship('Student', foreign_keys=[provider_student_id],
+                                       backref=db.backref('drift_books_provided', lazy=True))
+    receiver_user = db.relationship('User', foreign_keys=[receiver_user_id],
+                                    backref=db.backref('drift_books_received', lazy=True))
+    receiver_student = db.relationship('Student', foreign_keys=[receiver_student_id],
+                                       backref=db.backref('drift_books_received', lazy=True))
+    requests = db.relationship('DriftRequest', backref='book', lazy=True, cascade='all, delete-orphan')
+
+    @property
+    def provider_name(self):
+        if self.provider_user:
+            return self.provider_user.username
+        if self.provider_student:
+            return self.provider_student.name
+        return '未知'
+
+    @property
+    def receiver_name(self):
+        if self.receiver_user:
+            return self.receiver_user.username
+        if self.receiver_student:
+            return self.receiver_student.name
+        return None
+
+    def __repr__(self):
+        return f'<DriftBook {self.title}>'
+
+
+class DriftRequest(db.Model):
+    """漂流图书领取申请表"""
+    __tablename__ = 'drift_requests'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('drift_books.id'), nullable=False)
+    message = db.Column(db.Text, comment='给提供者的留言')
+    status = db.Column(db.String(20), default='pending', comment='状态: pending(待确认)/accepted(已同意)/rejected(已拒绝)')
+    create_time = db.Column(db.DateTime, default=datetime.now, comment='申请时间')
+
+    # 申请人：双外键
+    receiver_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    receiver_student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True)
+
+    receiver_user = db.relationship('User', foreign_keys=[receiver_user_id],
+                                    backref=db.backref('drift_requests', lazy=True))
+    receiver_student = db.relationship('Student', foreign_keys=[receiver_student_id],
+                                       backref=db.backref('drift_requests', lazy=True))
+
+    @property
+    def receiver_name(self):
+        if self.receiver_user:
+            return self.receiver_user.username
+        if self.receiver_student:
+            return self.receiver_student.name
+        return '未知'
+
+    def __repr__(self):
+        return f'<DriftRequest Book:{self.book_id} Status:{self.status}>'

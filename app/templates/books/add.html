@@ -3,61 +3,110 @@
 {% block title %}新增图书 - 智能图书管理系统{% endblock %}
 
 {% block content %}
-<div class="fade-in max-w-3xl mx-auto">
-    <div class="flex items-center mb-6">
-        <a href="{{ url_for('books.book_list') }}" class="text-gray-500 hover:text-primary mr-4 transition">
-            <i class="fas fa-arrow-left text-xl"></i>
-        </a>
+<div class="fade-in max-w-3xl mx-auto pb-10">
+    <div class="mb-6 flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-semibold text-gray-800">新增图书入库</h2>
-            <p class="text-sm text-gray-500 mt-1">录入新的馆藏书籍基础信息。</p>
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-plus-circle text-primary mr-3"></i>新增图书入库
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">录入新采购的图书信息，并设定其在馆内的物理存放位置。</p>
         </div>
+        <a href="{{ url_for('books.book_list') }}" class="text-gray-500 hover:text-primary transition font-medium text-sm flex items-center">
+            <i class="fas fa-arrow-left mr-1"></i> 返回列表
+        </a>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        <form method="POST" action="{{ url_for('books.add_book') }}" class="space-y-6">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ISBN (国际标准书号) <span class="text-red-500">*</span></label>
-                    <input type="text" name="isbn" required placeholder="例如: 978-7-111-59971-5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+    <!-- 消息提示区 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-lg text-sm flex items-center shadow-sm {% if category == 'error' %}bg-red-50 text-red-700 border-l-4 border-red-500{% else %}bg-green-50 text-green-700 border-l-4 border-green-500{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
                 </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-8">
+            <form action="{{ url_for('books.add_book') }}" method="POST">
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">书名 <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" required placeholder="输入完整的书名" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">基础信息</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ISBN 编号 <span class="text-red-500">*</span></label>
+                        <input type="text" name="isbn" required placeholder="如: 9787111656028" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">书名 <span class="text-red-500">*</span></label>
+                        <input type="text" name="title" required placeholder="输入完整的图书名称" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">作者</label>
-                    <input type="text" name="author" placeholder="多个作者用逗号隔开" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">作者 <span class="text-red-500">*</span></label>
+                        <input type="text" name="author" required placeholder="多个作者用逗号分隔" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">出版社</label>
+                        <input type="text" name="publisher" placeholder="如: 机械工业出版社" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">出版社</label>
-                    <input type="text" name="publisher" placeholder="例如: 清华大学出版社" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">图书分类</label>
+                    <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white transition">
+                        <option value="计算机科学">计算机科学</option>
+                        <option value="文学">文学</option>
+                        <option value="自然科学">自然科学</option>
+                        <option value="历史">历史</option>
+                        <option value="哲学">哲学</option>
+                        <option value="艺术">艺术</option>
+                        <option value="其他">其他</option>
+                    </select>
                 </div>
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">图书分类</label>
-                <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white">
-                    <option value="计算机科学">计算机科学</option>
-                    <option value="文学">文学</option>
-                    <option value="自然科学">自然科学</option>
-                    <option value="历史">历史</option>
-                    <option value="哲学">哲学</option>
-                    <option value="其他">其他</option>
-                </select>
-            </div>
+                <!-- 物理位置信息区 -->
+                <div class="mb-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100 mt-6">
+                    <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>实体馆藏位置设置
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">所在楼层 (数字)</label>
+                            <input type="number" name="floor" value="1" min="1" max="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">所在区域</label>
+                            <input type="text" name="area" value="A区" placeholder="如: A区" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">书架号</label>
+                            <input type="text" name="shelf" value="01架" placeholder="如: 01架" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none shadow-sm">
+                        </div>
+                    </div>
+                </div>
 
-            <div class="pt-4 flex justify-end space-x-3 border-t border-gray-100">
-                <a href="{{ url_for('books.book_list') }}" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">取消</a>
-                <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-800 shadow-md transition">
-                    <i class="fas fa-save mr-2"></i> 保存入库
-                </button>
-            </div>
-        </form>
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">内容简介</label>
+                    <textarea name="description" rows="4" placeholder="简要描述这本书的主要内容..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-y"></textarea>
+                </div>
+
+                <div class="flex justify-end pt-4 border-t border-gray-100">
+                    <button type="reset" class="px-6 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition mr-3">
+                        重置表单
+                    </button>
+                    <button type="submit" class="px-8 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-blue-800 transition shadow-md flex items-center">
+                        <i class="fas fa-save mr-2"></i> 确认入库
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

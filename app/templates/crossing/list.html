@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}图书漂流角 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-7xl mx-auto">
+    <div class="mb-8 text-center">
+        <h2 class="text-3xl font-extrabold text-gray-800 mb-2">
+            <i class="fas fa-feather-alt text-primary mr-2"></i>图书漂流角
+        </h2>
+        <p class="text-gray-400 text-sm">闲置教材的流转站——让知识在校园里继续漂流</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 max-w-2xl mx-auto">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-2xl text-sm font-medium flex items-center justify-center shadow-lg {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-times-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- 操作栏 -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ url_for('crossing.index', status='drifting') }}"
+               class="px-5 py-2 rounded-full text-sm font-bold transition-all {% if status_filter == 'drifting' %}bg-green-500 text-white shadow-lg{% else %}bg-white text-gray-500 border border-gray-200 hover:border-green-300{% endif %}">
+                <i class="fas fa-spinner mr-1.5"></i>漂流中
+            </a>
+            <a href="{{ url_for('crossing.index', status='claimed') }}"
+               class="px-5 py-2 rounded-full text-sm font-bold transition-all {% if status_filter == 'claimed' %}bg-purple-500 text-white shadow-lg{% else %}bg-white text-gray-500 border border-gray-200 hover:border-purple-300{% endif %}">
+                <i class="fas fa-check-circle mr-1.5"></i>已领走
+            </a>
+            {% if course_filter %}
+            <a href="{{ url_for('crossing.index', status=status_filter) }}"
+               class="px-4 py-2 rounded-full text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-all">
+                <i class="fas fa-times mr-1.5"></i>清除筛选
+            </a>
+            {% endif %}
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('crossing.my_crossing') }}"
+               class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:text-primary hover:border-primary transition-all shadow-sm">
+                <i class="fas fa-user mr-1.5"></i>我的漂流
+            </a>
+            <a href="{{ url_for('crossing.publish') }}"
+               class="px-5 py-2.5 bg-primary hover:bg-blue-900 text-white rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-xl active:scale-[0.98]">
+                <i class="fas fa-plus mr-1.5"></i>发布图书
+            </a>
+        </div>
+    </div>
+
+    <!-- 搜索 & 课程筛选 -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-8">
+        <form method="GET" action="{{ url_for('crossing.index') }}" class="flex flex-wrap gap-3">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <div class="flex-1 min-w-[200px]">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" name="keyword" value="{{ keyword }}"
+                           class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
+                           placeholder="搜索书名...">
+                </div>
+            </div>
+            <select name="course"
+                    class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none text-gray-600">
+                <option value="">全部课程</option>
+                {% for c in all_courses %}
+                <option value="{{ c }}" {% if course_filter == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit"
+                    class="px-6 py-2.5 bg-gray-800 hover:bg-black text-white rounded-xl text-sm font-bold transition-all shadow-sm">
+                <i class="fas fa-filter mr-1.5"></i>筛选
+            </button>
+        </form>
+    </div>
+
+    <!-- 图书卡片列表 -->
+    {% if books %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for book in books %}
+        <div class="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <a href="{{ url_for('crossing.detail', book_id=book.id) }}" class="block">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-extrabold text-gray-800 group-hover:text-primary transition-colors truncate">
+                            {{ book.title }}
+                        </h3>
+                        {% if book.course_related %}
+                        <p class="text-xs text-primary/70 font-medium mt-1">
+                            <i class="fas fa-graduation-cap mr-1"></i>{{ book.course_related }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <span class="flex-shrink-0 ml-3 px-3 py-1 rounded-full text-[10px] font-bold
+                                 {% if book.status == 'drifting' %}bg-green-100 text-green-700{% else %}bg-purple-100 text-purple-700{% endif %}">
+                        {{ '漂流中' if book.status == 'drifting' else '已领走' }}
+                    </span>
+                </div>
+
+                {% if book.description %}
+                <p class="text-sm text-gray-500 mb-4 line-clamp-2">{{ book.description }}</p>
+                {% endif %}
+
+                <div class="flex items-center justify-between text-xs text-gray-400">
+                    <span class="flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </span>
+                        {{ book.provider_name }}
+                    </span>
+                    <span>
+                        <span class="px-2 py-1 rounded-md text-[10px] font-medium
+                                     {% if book.condition == '全新' %}bg-blue-50 text-blue-600
+                                     {% elif book.condition == '良好' %}bg-green-50 text-green-600
+                                     {% elif book.condition == '一般' %}bg-yellow-50 text-yellow-600
+                                     {% else %}bg-orange-50 text-orange-600{% endif %}">
+                            {{ book.condition }}
+                        </span>
+                        <span class="ml-2">{{ book.publish_time.strftime('%m-%d %H:%M') }}</span>
+                    </span>
+                </div>
+            </a>
+
+            {% if session.get('role') == 'admin' %}
+            <div class="mt-3 pt-3 border-t border-gray-100 flex gap-2" onclick="event.stopPropagation()">
+                <a href="{{ url_for('crossing.edit_book', book_id=book.id) }}"
+                   class="flex-1 text-center py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors"
+                   onclick="event.stopPropagation()">
+                    <i class="fas fa-edit mr-1"></i>编辑
+                </a>
+                <form method="POST" action="{{ url_for('crossing.delete_book', book_id=book.id) }}" class="flex-1"
+                      onsubmit="return confirm('确定要删除《{{ book.title }}》吗？此操作不可撤销。')">
+                    <button type="submit" class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors">
+                        <i class="fas fa-trash mr-1"></i>删除
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-20 bg-white rounded-3xl border border-gray-100">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+            <i class="fas fa-feather-alt text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-500 mb-1">暂无漂流图书</h3>
+        <p class="text-gray-400 text-sm mb-6">成为第一个发布闲置教材的人吧！</p>
+        <a href="{{ url_for('crossing.publish') }}"
+           class="inline-flex items-center px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-blue-900 transition-all shadow-lg">
+            <i class="fas fa-plus mr-2"></i>发布图书
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

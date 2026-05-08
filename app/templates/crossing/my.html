@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}我的漂流 - 图书漂流角{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-7xl mx-auto">
+    <div class="mb-8 text-center">
+        <h2 class="text-3xl font-extrabold text-gray-800 mb-2">
+            <i class="fas {% if is_admin %}fa-crown text-red-500{% else %}fa-user-circle text-primary{% endif %} mr-2"></i>
+            {% if is_admin %}管理员 · 漂流管理{% else %}我的漂流{% endif %}
+        </h2>
+        <p class="text-gray-400 text-sm">
+            {% if is_admin %}查看并管理全部漂流图书与申请记录{% else %}管理我发布的书和我发出的申请{% endif %}
+        </p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 max-w-2xl mx-auto">
+            {% for category, message in messages %}
+                <div class="p-4 rounded-2xl text-sm font-medium flex items-center justify-center shadow-lg {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-times-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="mb-8 flex gap-3">
+        <a href="{{ url_for('crossing.index') }}"
+           class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:text-primary hover:border-primary transition-all shadow-sm">
+            <i class="fas fa-arrow-left mr-1.5"></i>返回漂流广场
+        </a>
+        <a href="{{ url_for('crossing.publish') }}"
+           class="px-5 py-2.5 bg-primary hover:bg-blue-900 text-white rounded-xl text-sm font-bold transition-all shadow-lg">
+            <i class="fas fa-plus mr-1.5"></i>发布图书
+        </a>
+    </div>
+
+    <!-- 我发布的图书 -->
+    <div class="mb-12">
+        <div class="flex items-center mb-5">
+            <div class="w-2 h-8 bg-primary rounded-full mr-3"></div>
+            <h3 class="text-xl font-extrabold text-gray-800">
+                {% if is_admin %}全部漂流图书{% else %}我发布的图书{% endif %}
+            </h3>
+            <span class="ml-3 px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-500">{{ my_books|length }}</span>
+        </div>
+
+        {% if my_books %}
+        <div class="space-y-4">
+        {% for book in my_books %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
+            <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <h4 class="text-lg font-extrabold text-gray-800">{{ book.title }}</h4>
+                        <span class="px-3 py-0.5 rounded-full text-[10px] font-bold
+                                     {% if book.status == 'drifting' %}bg-green-100 text-green-700{% else %}bg-purple-100 text-purple-700{% endif %}">
+                            {{ '漂流中' if book.status == 'drifting' else '已领走' }}
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+                        {% if is_admin %}<span class="text-red-400"><i class="fas fa-user mr-1"></i>提供者：{{ book.provider_name }}</span>{% endif %}
+                        {% if book.course_related %}<span><i class="fas fa-graduation-cap mr-1"></i>{{ book.course_related }}</span>{% endif %}
+                        <span><i class="fas fa-star mr-1"></i>{{ book.condition }}</span>
+                        <span><i class="fas fa-clock mr-1"></i>{{ book.publish_time.strftime('%Y-%m-%d %H:%M') }}</span>
+                        {% if book.receiver_name %}<span><i class="fas fa-user-check mr-1"></i>领取者：{{ book.receiver_name }}</span>{% endif %}
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('crossing.detail', book_id=book.id) }}"
+                       class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold text-gray-600 transition-all">
+                        <i class="fas fa-eye mr-1"></i>详情
+                    </a>
+                    {% if is_admin %}
+                    <a href="{{ url_for('crossing.edit_book', book_id=book.id) }}"
+                       class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-bold transition-all">
+                        <i class="fas fa-edit mr-1"></i>编辑
+                    </a>
+                    <form method="POST" action="{{ url_for('crossing.delete_book', book_id=book.id) }}"
+                          onsubmit="return confirm('确定要删除《{{ book.title }}》吗？')" class="inline">
+                        <button type="submit" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-bold transition-all">
+                            <i class="fas fa-trash mr-1"></i>删除
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 该书的申请列表 -->
+            {% if book.id in received_requests %}
+            <div class="mt-5 pt-5 border-t border-gray-100">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                    <i class="fas fa-clipboard-list mr-1"></i>收到的申请
+                </p>
+                <div class="space-y-3">
+                {% for req in received_requests[book.id] %}
+                <div class="flex items-center justify-between bg-gray-50 rounded-xl p-4 {% if req.status == 'accepted' %}bg-green-50 ring-1 ring-green-200{% elif req.status == 'rejected' %}opacity-50{% endif %}">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-gray-400 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-700">{{ req.receiver_name }}</p>
+                            {% if req.message %}
+                            <p class="text-xs text-gray-400 mt-0.5">"{{ req.message }}"</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-full
+                                     {% if req.status == 'pending' %}bg-yellow-100 text-yellow-700
+                                     {% elif req.status == 'accepted' %}bg-green-100 text-green-700
+                                     {% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {{ {'pending': '待处理', 'accepted': '已同意', 'rejected': '已拒绝'}[req.status] }}
+                        </span>
+                        {% if is_admin %}
+                        <form method="POST" action="{{ url_for('crossing.delete_request', request_id=req.id) }}"
+                              onsubmit="return confirm('确定要删除该申请记录吗？')" class="inline">
+                            <button type="submit" class="text-red-400 hover:text-red-600 transition-colors" title="删除申请">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% if req.status == 'pending' %}
+                        <form method="POST" action="{{ url_for('crossing.handle_request', request_id=req.id, action='accept') }}" class="inline">
+                            <button type="submit" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition-all">
+                                <i class="fas fa-check mr-0.5"></i>同意
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('crossing.handle_request', request_id=req.id, action='reject') }}" class="inline">
+                            <button type="submit" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-500 rounded-lg text-xs font-bold transition-all">
+                                <i class="fas fa-times mr-0.5"></i>拒绝
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 bg-white rounded-2xl border border-gray-100">
+            <i class="fas fa-box-open text-4xl text-gray-300 mb-3 block"></i>
+            <p class="text-gray-400">还没有发布过任何图书</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 我发出的申请 -->
+    <div>
+        <div class="flex items-center mb-5">
+            <div class="w-2 h-8 bg-orange-500 rounded-full mr-3"></div>
+            <h3 class="text-xl font-extrabold text-gray-800">
+                {% if is_admin %}全部申请记录{% else %}我发出的申请{% endif %}
+            </h3>
+            <span class="ml-3 px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-500">{{ my_requests|length }}</span>
+        </div>
+
+        {% if my_requests %}
+        <div class="space-y-3">
+        {% for req in my_requests %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between hover:shadow-md transition-all">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mr-4">
+                    <i class="fas fa-book text-gray-400"></i>
+                </div>
+                <div>
+                    <a href="{{ url_for('crossing.detail', book_id=req.book.id) }}" class="font-bold text-gray-700 hover:text-primary transition-colors">
+                        {{ req.book.title }}
+                    </a>
+                    <p class="text-xs text-gray-400">
+                        {% if is_admin %}申请者：{{ req.receiver_name }} · {% endif %}提供者：{{ req.book.provider_name }} · {{ req.create_time.strftime('%m-%d %H:%M') }}
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="px-3 py-1.5 rounded-full text-[10px] font-bold
+                             {% if req.status == 'pending' %}bg-yellow-100 text-yellow-700
+                             {% elif req.status == 'accepted' %}bg-green-100 text-green-700
+                             {% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {{ {'pending': '待处理', 'accepted': '已同意', 'rejected': '已拒绝'}[req.status] }}
+                </span>
+                {% if is_admin %}
+                <form method="POST" action="{{ url_for('crossing.delete_request', request_id=req.id) }}"
+                      onsubmit="return confirm('确定要删除该申请记录吗？')" class="inline">
+                    <button type="submit" class="text-red-400 hover:text-red-600 transition-colors" title="删除申请">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 bg-white rounded-2xl border border-gray-100">
+            <i class="fas fa-inbox text-4xl text-gray-300 mb-3 block"></i>
+            <p class="text-gray-400">还没有发出过任何申请</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
