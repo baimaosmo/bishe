@@ -226,7 +226,8 @@ def ai_moderate_review(review):
     }
 
     # 发送请求（verify=False 跳过 SSL 证书验证）
-    response = requests.post(url, headers=headers, json=payload, timeout=30, verify=False)
+    response = requests.post(url, headers=headers, json=payload, timeout=30, verify=False,
+                             proxies={"http": None, "https": None})
     response.raise_for_status()  # 非 200 状态码会抛出异常
 
     # 提取 AI 回复内容
@@ -445,6 +446,9 @@ def return_book(record_id):
         db.session.rollback()
         flash('归还失败！', 'error')
 
+    # 管理员归还后跳回管理页面，普通用户跳回我的借阅
+    if session.get('role') == 'admin':
+        return redirect(request.args.get('next') or url_for('books.manage_interactions'))
     return redirect(url_for('books.my_borrowing'))
 
 
@@ -884,6 +888,10 @@ def manage_interactions():
         Book.id
     ).order_by(func.count(BookFavorite.id).desc()).limit(10).all()
 
+    # 当前在借图书（未归还的）
+    active_borrowings = BorrowRecord.query.filter_by(status='borrowing')\
+        .order_by(BorrowRecord.borrow_time.desc()).all()
+
     # 最近借阅记录 30 条
     borrow_records = BorrowRecord.query.order_by(BorrowRecord.borrow_time.desc()).limit(30).all()
 
@@ -893,8 +901,10 @@ def manage_interactions():
     return render_template('books/admin_interactions.html',
                            reviews=reviews,
                            popular_books=popular_books,
+                           active_borrowings=active_borrowings,
                            borrow_records=borrow_records,
-                           seat_reservations=seat_reservations)
+                           seat_reservations=seat_reservations,
+                           now=datetime.utcnow())
 
 
 # ==================== 15. 人工审核评价（已废弃，改用 AI） ====================

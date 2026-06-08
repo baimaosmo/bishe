@@ -68,9 +68,12 @@
             <a href="{{ url_for('ai.search_page') }}" class="nav-link">
                 <i class="fas fa-robot"></i> 智能搜索与匹配
             </a>
+            <a href="{{ url_for('ai.generate_report_page') }}" class="nav-link">
+                <i class="fas fa-file-alt"></i> 报告生成与优化
+            </a>
             {% if session.get('role') == 'admin' %}
             <a href="{{ url_for('ai.generate_report') }}" class="nav-link">
-                <i class="fas fa-file-alt"></i> 摘要与报告生成
+                <i class="fas fa-chart-pie"></i> 数据统计大屏
             </a>
             {% endif %}
 

@@ -1,0 +1,730 @@
+{% extends "base.html" %}
+
+{% block title %}AI 报告生成 - 智能图书管理系统{% endblock %}
+
+{% block content %}
+<div class="fade-in max-w-7xl mx-auto space-y-6">
+    <!-- 页面头部 -->
+    <section class="page-hero ai-search-hero">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+                <p class="text-blue-100 text-sm font-bold mb-2">AI REPORT GENERATOR</p>
+                <h2 class="page-title">AI 智能报告生成</h2>
+                <p class="page-subtitle">为图书或任意主题生成读书报告、摘要、分析或书评，支持后续优化修改。</p>
+            </div>
+            <div class="hero-badges">
+                <span><i class="fas fa-feather"></i> 多类型报告</span>
+                <span><i class="fas fa-sliders"></i> 篇幅可控</span>
+                <span><i class="fas fa-rotate"></i> 二次优化</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 主体区域：左侧表单 + 右侧结果 -->
+    <div class="report-workbench">
+        <!-- 左侧：配置面板 -->
+        <aside class="report-side">
+            <!-- 新建报告表单 -->
+            <div class="side-panel">
+                <div class="side-title">
+                    <i class="fas fa-pen-to-square"></i>
+                    <span>新建报告</span>
+                </div>
+
+                <!-- 目标类型选择 -->
+                <div class="form-group">
+                    <label class="form-label">目标类型</label>
+                    <div class="radio-group">
+                        <label class="radio-card" id="type-book-card">
+                            <input type="radio" name="target_type" value="book" checked onchange="switchTargetType('book')">
+                            <i class="fas fa-book"></i>
+                            <span>馆藏图书</span>
+                        </label>
+                        <label class="radio-card" id="type-custom-card">
+                            <input type="radio" name="target_type" value="custom" onchange="switchTargetType('custom')">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>自定义主题</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 选择图书 -->
+                <div class="form-group" id="book-select-group">
+                    <label class="form-label" for="book-select">选择图书</label>
+                    <select id="book-select" class="form-select">
+                        <option value="">-- 请选择一本图书 --</option>
+                        {% for book in books %}
+                        <option value="{{ book.id }}">《{{ book.title }}》 — {{ book.author }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 自定义主题 -->
+                <div class="form-group hidden" id="custom-topic-group">
+                    <label class="form-label" for="custom-topic">自定义主题</label>
+                    <input type="text" id="custom-topic" class="form-input"
+                           placeholder="例如：人工智能发展趋势、Python学习心得...">
+                </div>
+
+                <!-- 报告类型 -->
+                <div class="form-group">
+                    <label class="form-label">报告类型</label>
+                    <div class="chip-group" id="report-type-group">
+                        <button type="button" class="chip active" data-value="读后感" onclick="selectChip(this, 'report-type-group')">读后感</button>
+                        <button type="button" class="chip" data-value="摘要" onclick="selectChip(this, 'report-type-group')">摘要</button>
+                        <button type="button" class="chip" data-value="分析报告" onclick="selectChip(this, 'report-type-group')">分析报告</button>
+                        <button type="button" class="chip" data-value="书评" onclick="selectChip(this, 'report-type-group')">书评</button>
+                    </div>
+                </div>
+
+                <!-- 篇幅 -->
+                <div class="form-group">
+                    <label class="form-label">篇幅</label>
+                    <div class="chip-group" id="length-group">
+                        <button type="button" class="chip" data-value="短" onclick="selectChip(this, 'length-group')">短篇 (~300字)</button>
+                        <button type="button" class="chip active" data-value="中" onclick="selectChip(this, 'length-group')">中篇 (~600字)</button>
+                        <button type="button" class="chip" data-value="长" onclick="selectChip(this, 'length-group')">长篇 (~1000字)</button>
+                    </div>
+                </div>
+
+                <button id="generate-btn" class="generate-btn" onclick="generateReport()">
+                    <i class="fas fa-wand-magic-sparkles"></i> 生成报告
+                </button>
+            </div>
+
+            <!-- 优化报告面板（生成后才显示） -->
+            <div class="side-panel hidden" id="refine-panel">
+                <div class="side-title">
+                    <i class="fas fa-rotate"></i>
+                    <span>优化报告</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="refine-input">修改要求</label>
+                    <textarea id="refine-input" class="form-textarea" rows="3"
+                              placeholder="例如：把语气改得更学术化、增加一个总结章节、缩短到300字以内..."></textarea>
+                </div>
+                <button id="refine-btn" class="refine-btn" onclick="refineReport()">
+                    <i class="fas fa-arrows-spin"></i> 按此要求修改
+                </button>
+                <p class="input-tip">AI 会在当前报告基础上根据您的要求重新生成。</p>
+            </div>
+        </aside>
+
+        <!-- 右侧：报告展示区 -->
+        <main class="report-panel">
+            <div class="report-toolbar">
+                <div>
+                    <h3>生成的报告</h3>
+                    <p id="report-status">选择参数后点击「生成报告」开始。</p>
+                </div>
+                <div class="toolbar-actions">
+                    <span class="word-count hidden" id="word-count">约 0 字</span>
+                    <button class="copy-btn hidden" id="copy-btn" onclick="copyReport()" title="复制报告内容">
+                        <i class="fas fa-copy"></i> 复制
+                    </button>
+                </div>
+            </div>
+
+            <div id="report-container" class="report-container">
+                <!-- 空状态 -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-file-lines"></i>
+                    </div>
+                    <h4>尚未生成报告</h4>
+                    <p>在左侧选择目标、报告类型和篇幅，然后点击「生成报告」。</p>
+                    <div class="empty-hints">
+                        <div><i class="fas fa-check-circle"></i> 选择馆藏图书或输入自定义主题</div>
+                        <div><i class="fas fa-check-circle"></i> 选择报告类型（读后感/摘要/分析/书评）</div>
+                        <div><i class="fas fa-check-circle"></i> 选择篇幅（短/中/长）</div>
+                        <div><i class="fas fa-check-circle"></i> 生成后可输入修改要求进行二次优化</div>
+                    </div>
+                </div>
+
+                <!-- 报告内容 -->
+                <div id="report-content" class="report-content prose prose-slate hidden"></div>
+
+                <!-- 加载动画 -->
+                <div id="report-loading" class="report-loading hidden">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p id="loading-text">AI 正在生成报告...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    // ---- 状态管理 ----
+    let currentReport = '';  // 当前生成的完整报告文本
+
+    // ---- UI 切换 ----
+    function switchTargetType(type) {
+        const bookGroup = document.getElementById('book-select-group');
+        const customGroup = document.getElementById('custom-topic-group');
+        const bookCard = document.getElementById('type-book-card');
+        const customCard = document.getElementById('type-custom-card');
+
+        if (type === 'book') {
+            bookGroup.classList.remove('hidden');
+            customGroup.classList.add('hidden');
+            bookCard.classList.add('active-radio');
+            customCard.classList.remove('active-radio');
+        } else {
+            bookGroup.classList.add('hidden');
+            customGroup.classList.remove('hidden');
+            bookCard.classList.remove('active-radio');
+            customCard.classList.add('active-radio');
+        }
+    }
+
+    // 初始化 radio-card 样式
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('type-book-card').classList.add('active-radio');
+    });
+
+    function selectChip(btn, groupId) {
+        const group = document.getElementById(groupId);
+        group.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function getSelectedChip(groupId) {
+        const group = document.getElementById(groupId);
+        const active = group.querySelector('.chip.active');
+        return active ? active.dataset.value : '';
+    }
+
+    // ---- 显示/隐藏元素 ----
+    function showLoading(text) {
+        document.getElementById('report-loading').classList.remove('hidden');
+        document.getElementById('loading-text').textContent = text;
+        document.getElementById('empty-state').classList.add('hidden');
+        document.getElementById('report-content').classList.add('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('report-loading').classList.add('hidden');
+    }
+
+    function showReport(markdown) {
+        document.getElementById('empty-state').classList.add('hidden');
+        document.getElementById('report-content').classList.remove('hidden');
+        document.getElementById('report-content').innerHTML = marked.parse(markdown);
+        document.getElementById('refine-panel').classList.remove('hidden');
+        document.getElementById('copy-btn').classList.remove('hidden');
+        document.getElementById('word-count').classList.remove('hidden');
+        document.getElementById('word-count').textContent = '约 ' + estimateWordCount(markdown) + ' 字';
+        document.getElementById('report-status').textContent = '报告已生成，可在左侧输入修改要求进行优化。';
+    }
+
+    function estimateWordCount(text) {
+        // 去掉 Markdown 标记后估算中文字数
+        const cleaned = text.replace(/[#*>`\-\|\s]+/g, '').replace(/\[.*?\]\(.*?\)/g, '');
+        return cleaned.length;
+    }
+
+    // ---- 生成报告 ----
+    async function generateReport() {
+        const targetType = document.querySelector('input[name="target_type"]:checked').value;
+        let bookId = null;
+        let customTopic = '';
+
+        if (targetType === 'book') {
+            bookId = document.getElementById('book-select').value;
+            if (!bookId) {
+                alert('请选择一本馆藏图书。');
+                return;
+            }
+        } else {
+            customTopic = document.getElementById('custom-topic').value.trim();
+            if (!customTopic) {
+                alert('请输入自定义主题。');
+                return;
+            }
+        }
+
+        const reportType = getSelectedChip('report-type-group');
+        const length = getSelectedChip('length-group');
+
+        const btn = document.getElementById('generate-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+
+        showLoading('AI 正在分析并生成报告，请耐心等待...');
+        currentReport = '';
+
+        try {
+            const response = await fetch("{{ url_for('ai.api_generate_report') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_type: targetType,
+                    book_id: bookId ? parseInt(bookId) : null,
+                    custom_topic: customTopic,
+                    report_type: reportType,
+                    length: length
+                })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (response.ok && data.report) {
+                currentReport = data.report;
+                showReport(data.report);
+            } else {
+                showReport('**生成失败：** ' + (data.error || '未知错误，请稍后再试。'));
+                document.getElementById('report-status').textContent = '生成失败。';
+            }
+        } catch (error) {
+            hideLoading();
+            showReport('**网络请求失败**，请检查网络连接或稍后再试。');
+            document.getElementById('report-status').textContent = '网络错误。';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 生成报告';
+        }
+    }
+
+    // ---- 优化报告 ----
+    async function refineReport() {
+        if (!currentReport) {
+            alert('请先生成一份报告。');
+            return;
+        }
+
+        const refinePrompt = document.getElementById('refine-input').value.trim();
+        if (!refinePrompt) {
+            alert('请输入修改要求。');
+            return;
+        }
+
+        const btn = document.getElementById('refine-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 修改中...';
+
+        showLoading('AI 正在根据您的要求优化报告...');
+
+        try {
+            const response = await fetch("{{ url_for('ai.api_generate_report') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    previous_report: currentReport,
+                    refine_prompt: refinePrompt
+                })
+            });
+
+            const data = await response.json();
+            hideLoading();
+
+            if (response.ok && data.report) {
+                currentReport = data.report;
+                showReport(data.report);
+                document.getElementById('refine-input').value = '';
+                document.getElementById('report-status').textContent = '报告已根据您的要求优化完成。';
+            } else {
+                alert('优化失败：' + (data.error || '未知错误'));
+            }
+        } catch (error) {
+            hideLoading();
+            alert('网络请求失败，请稍后再试。');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-arrows-spin"></i> 按此要求修改';
+        }
+    }
+
+    // ---- 复制报告 ----
+    function copyReport() {
+        if (!currentReport) return;
+        navigator.clipboard.writeText(currentReport).then(() => {
+            const btn = document.getElementById('copy-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+        }).catch(() => {
+            alert('复制失败，请手动复制。');
+        });
+    }
+
+    // ---- 回车键快捷发送优化请求 ----
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('refine-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                refineReport();
+            }
+        });
+    });
+</script>
+
+<style>
+    /* ---- 工作台布局 ---- */
+    .report-workbench {
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr);
+        gap: 20px;
+        min-height: calc(100vh - 18rem);
+    }
+
+    @media (max-width: 1024px) {
+        .report-workbench {
+            grid-template-columns: 1fr;
+        }
+        .report-side {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+    }
+    @media (max-width: 760px) {
+        .report-side {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ---- 侧边面板 ---- */
+    .report-side {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 0;
+    }
+    .side-panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        padding: 20px;
+        box-shadow: 0 10px 28px rgba(15,23,42,0.05);
+        transition: opacity 0.3s ease;
+    }
+    .side-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 950;
+        margin-bottom: 16px;
+    }
+    .side-title i { color: #2563eb; }
+
+    /* ---- 表单元素 ---- */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+        display: block;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    .form-select, .form-input, .form-textarea {
+        width: 100%;
+        border: 2px solid #e2e8f0;
+        border-radius: 13px;
+        padding: 10px 13px;
+        font-size: 13px;
+        color: #0f172a;
+        background: #f8fafc;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .form-select:focus, .form-input:focus, .form-textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37,99,235,0.08);
+        background: #fff;
+    }
+    .form-textarea { resize: vertical; min-height: 72px; }
+    .hidden { display: none !important; }
+
+    /* ---- Radio 卡片 ---- */
+    .radio-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .radio-card {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 13px;
+        border: 2px solid #e2e8f0;
+        border-radius: 14px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 850;
+        color: #64748b;
+        background: #fff;
+        transition: border-color 0.18s ease, background 0.18s ease;
+    }
+    .radio-card input { display: none; }
+    .radio-card:hover { border-color: #93c5fd; background: #f8fbff; }
+    .radio-card.active-radio {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1d4ed8;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+    }
+    .radio-card i { font-size: 14px; }
+
+    /* ---- Chip 选择 ---- */
+    .chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .chip {
+        min-height: 36px;
+        padding: 8px 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 999px;
+        background: #fff;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 850;
+        cursor: pointer;
+        transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+    .chip:hover { border-color: #93c5fd; }
+    .chip.active {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    /* ---- 按钮 ---- */
+    .generate-btn, .refine-btn {
+        width: 100%;
+        min-height: 50px;
+        border-radius: 15px;
+        border: none;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 950;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+    .generate-btn {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        box-shadow: 0 10px 24px rgba(37,99,235,0.28);
+    }
+    .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(37,99,235,0.34); }
+    .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .refine-btn {
+        background: linear-gradient(135deg, #7c3aed, #6366f1);
+        box-shadow: 0 10px 24px rgba(99,102,241,0.28);
+    }
+    .refine-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(99,102,241,0.34); }
+    .refine-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .input-tip {
+        color: #94a3b8;
+        font-size: 11px;
+        margin-top: 8px;
+        padding-left: 2px;
+    }
+
+    /* ---- 报告展示面板 ---- */
+    .report-panel {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        box-shadow: 0 10px 28px rgba(15,23,42,0.05);
+        overflow: hidden;
+    }
+    .report-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 22px;
+        border-bottom: 1px solid #e5e7eb;
+        background: linear-gradient(180deg, #fff, #f8fafc);
+    }
+    .report-toolbar h3 {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+    .report-toolbar p {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 3px;
+    }
+    .toolbar-actions { display: flex; align-items: center; gap: 10px; }
+    .word-count {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .copy-btn {
+        min-height: 34px;
+        padding: 7px 14px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 850;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: background 0.18s ease, border-color 0.18s ease;
+    }
+    .copy-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+    /* ---- 报告容器 ---- */
+    .report-container {
+        flex: 1;
+        min-height: 480px;
+        max-height: calc(100vh - 21rem);
+        overflow-y: auto;
+        padding: 28px 32px;
+        background: #fbfcfd;
+        position: relative;
+    }
+    @media (max-width: 760px) {
+        .report-container { min-height: 380px; padding: 18px; }
+    }
+
+    /* ---- 空状态 ---- */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 100%;
+        min-height: 360px;
+        color: #94a3b8;
+    }
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 22px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: #cbd5e1;
+        margin-bottom: 20px;
+    }
+    .empty-state h4 {
+        color: #475569;
+        font-size: 18px;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+    .empty-state > p {
+        font-size: 14px;
+        margin-bottom: 22px;
+    }
+    .empty-hints {
+        text-align: left;
+        display: inline-flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .empty-hints div {
+        font-size: 13px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .empty-hints i { color: #22c55e; }
+
+    /* ---- 报告内容排版 ---- */
+    .report-content { line-height: 1.85; color: #334155; font-size: 15px; }
+    .report-content h1, .report-content h2, .report-content h3 {
+        color: #0f172a;
+        font-weight: 950;
+        margin: 1.2em 0 0.5em;
+    }
+    .report-content h2 { font-size: 1.3em; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+    .report-content h3 { font-size: 1.1em; }
+    .report-content p { margin-bottom: 0.8em; }
+    .report-content strong { color: #1e3a8a; }
+    .report-content ul, .report-content ol { padding-left: 1.5em; margin: 0.6em 0; }
+    .report-content li { margin: 0.3em 0; }
+    .report-content blockquote {
+        border-left: 4px solid #2563eb;
+        padding-left: 16px;
+        color: #64748b;
+        margin: 1em 0;
+        background: #f8fafc;
+        padding: 12px 16px;
+        border-radius: 0 10px 10px 0;
+    }
+    .report-content code {
+        background: #f1f5f9;
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-size: 0.9em;
+        color: #dc2626;
+    }
+    .report-content pre {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 16px;
+        border-radius: 12px;
+        overflow-x: auto;
+        margin: 1em 0;
+    }
+    .report-content pre code { background: none; color: inherit; padding: 0; }
+
+    /* ---- 加载动画 ---- */
+    .report-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 300px;
+        gap: 16px;
+    }
+    .loading-spinner i {
+        font-size: 36px;
+        color: #2563eb;
+    }
+    .report-loading p {
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    /* ---- 复用搜索页 hero 样式 ---- */
+    .ai-search-hero .hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .hero-badges span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 9px 13px;
+        border-radius: 14px;
+        color: #e0f2fe;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.16);
+        font-size: 12px;
+        font-weight: 900;
+    }
+</style>
+{% endblock %}

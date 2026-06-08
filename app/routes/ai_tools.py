@@ -161,6 +161,25 @@ def search_page():
     return render_template('ai/search.html')
 
 
+# ==================== 2.5. AI 报告生成页面 ====================
+
+@ai_bp.route('/generate-report')
+def generate_report_page():
+    """
+    AI 报告生成页面 — 支持新建报告和优化已有报告
+    用户可指定主题/图书、报告类型和篇幅，由 AI 生成专业报告
+    生成后支持输入 refine_prompt 进行二次修改
+    """
+
+    if 'account_id' not in session:
+        return redirect(url_for('auth.login'))
+
+    # 获取所有图书供下拉选择
+    books = Book.query.order_by(Book.title.asc()).all()
+
+    return render_template('ai/generate_report.html', books=books)
+
+
 # ==================== 3. AI 智能搜索 API ====================
 
 @ai_bp.route('/api/match', methods=['POST'])
@@ -222,7 +241,8 @@ def api_match():
         }
 
         # 发送 POST 请求
-        response = requests.post(url, headers=headers, json=payload, timeout=30, verify=False)
+        response = requests.post(url, headers=headers, json=payload, timeout=30, verify=False,
+                                 proxies={"http": None, "https": None})
         response.raise_for_status()  # 检查 HTTP 状态码
 
         # 提取 AI 回复文本
@@ -319,7 +339,8 @@ def api_generate_report():
         }
 
         # 报告生成可能耗时较长，timeout 设为 60 秒
-        response = requests.post(url, headers=headers, json=payload, timeout=60, verify=False)
+        response = requests.post(url, headers=headers, json=payload, timeout=60, verify=False,
+                                 proxies={"http": None, "https": None})
         response.raise_for_status()
 
         result = response.json()
