@@ -47,6 +47,29 @@
                     </div>
                 </div>
 
+                <!-- 副本数量 -->
+                <div id="copies-section" class="mb-6 bg-amber-50/60 p-5 rounded-xl border border-amber-200">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-cubes mr-2 text-amber-600"></i>入库副本设置
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">入库册数</label>
+                            <input type="number" id="copies-count" name="copies_count" value="1" min="1" max="50"
+                                   onchange="generateShelfInputs()"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none shadow-sm">
+                            <p class="text-xs text-gray-400 mt-1">同一 ISBN 入库多册副本，每册位置可不同。</p>
+                        </div>
+                    </div>
+                    <!-- 每册位置（动态生成） -->
+                    <div id="copies-location-list" class="mt-4 space-y-2">
+                        <div class="copy-location-row flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                            <span class="text-xs font-bold text-gray-400 w-6">#1</span>
+                            <span class="text-xs text-gray-400">使用下方「实体馆藏位置」设定</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">作者 <span class="text-red-500">*</span></label>
@@ -122,4 +145,37 @@
         </div>
     </div>
 </div>
+
+<script>
+    function generateShelfInputs() {
+        const count = parseInt(document.getElementById('copies-count').value) || 1;
+        const container = document.getElementById('copies-location-list');
+        const baseFloor = document.querySelector('input[name="floor"]').value || '1';
+        const baseArea = document.querySelector('input[name="area"]').value || 'A区';
+        const baseShelf = document.querySelector('input[name="shelf"]').value || '01架';
+        let html = '';
+
+        for (let i = 0; i < count; i++) {
+            const num = i + 1;
+            if (i === 0) {
+                html += '<div class="copy-location-row flex items-center gap-3 bg-blue-50/60 p-3 rounded-lg border border-blue-100">' +
+                    '<span class="text-xs font-bold text-blue-600 w-6">#' + num + '</span>' +
+                    '<span class="text-xs text-blue-500">使用下方「实体馆藏位置」设定</span></div>';
+            } else {
+                const shelfNum = String(parseInt(baseShelf) + i).padStart(2, '0') + '架';
+                html += '<div class="copy-location-row flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">' +
+                    '<span class="text-xs font-bold text-gray-500 w-6">#' + num + '</span>' +
+                    '<span class="text-xs text-gray-600">自动分配：' + baseFloor + 'F ' + baseArea +
+                    ' <span class="font-bold text-gray-800">' + shelfNum + '</span></span>' +
+                    '<span class="text-xs text-gray-400 ml-auto">自动递增</span></div>';
+            }
+        }
+        container.innerHTML = html;
+    }
+
+    document.querySelectorAll('input[name="floor"], input[name="area"], input[name="shelf"]').forEach(function(el) {
+        el.addEventListener('input', generateShelfInputs);
+    });
+    document.addEventListener('DOMContentLoaded', generateShelfInputs);
+</script>
 {% endblock %}

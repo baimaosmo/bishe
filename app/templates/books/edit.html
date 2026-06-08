@@ -17,11 +17,32 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="bg-gray-50 px-8 py-4 border-b border-gray-100 flex items-center justify-between">
-            <span class="text-sm text-gray-500 font-mono">ISBN: {{ book.isbn }}</span>
-            <span class="px-2.5 py-1 text-xs font-bold rounded-full {% if book.status == 'available' %}bg-green-100 text-green-700{% else %}bg-orange-100 text-orange-700{% endif %}">
-                状态: {{ '可借阅' if book.status == 'available' else '已借出' }}
-            </span>
+        <div class="bg-gray-50 px-8 py-4 border-b border-gray-100 space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500 font-mono">ISBN: {{ book.isbn }}</span>
+                    {% if copy_count > 1 %}
+                    <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                        <i class="fas fa-cubes mr-1"></i>副本：{% for copy in copies %}{% if copy.id == book.id %}{{ loop.index }}{% endif %}{% endfor %}/{{ copy_count }} 册
+                    </span>
+                    {% endif %}
+                </div>
+                <span class="px-2.5 py-1 text-xs font-bold rounded-full {% if book.status == 'available' %}bg-green-100 text-green-700{% else %}bg-orange-100 text-orange-700{% endif %}">
+                    状态: {{ '可借阅' if book.status == 'available' else '已借出' }}
+                </span>
+            </div>
+            {% if copy_count > 1 %}
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs text-gray-400">同 ISBN 副本：</span>
+                {% for copy in copies %}
+                <a href="{{ url_for('books.edit_book', book_id=copy.id) }}"
+                   class="text-xs px-2 py-1 rounded-lg border transition
+                   {% if copy.id == book.id %}bg-primary text-white border-primary font-bold{% else %}bg-white text-gray-600 border-gray-200 hover:border-primary{% endif %}">
+                    #{{ loop.index }} ({{ copy.shelf }})
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="p-8">

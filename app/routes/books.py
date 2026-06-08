@@ -337,9 +337,13 @@ def add_book():
         description = request.form.get('description')
 
         # 馆藏位置信息
-        floor = request.form.get('floor', type=int)  # type=int 将字符串转为整数
-        area = request.form.get('area')
-        shelf = request.form.get('shelf')
+        floor = request.form.get('floor', type=int) or 1
+        area = request.form.get('area') or 'A区'
+        shelf = request.form.get('shelf') or '01架'
+
+        # 入库册数（默认1册）
+        copies_count = request.form.get('copies_count', type=int) or 1
+        copies_count = max(1, min(copies_count, 50))  # 限制 1~50 册
 
         # 保存上传的封面图片
         cover_image = save_uploaded_image(request.files.get('cover_image'), 'book_covers')
@@ -347,10 +351,9 @@ def add_book():
         # 查询同 ISBN 的已有册数
         existing_copies = Book.query.filter_by(isbn=normalized_isbn).count()
 
-        # 如果该 ISBN 已有记录，从已有记录中继承书名/作者/封面等信息（管理员可覆盖）
+        # 如果该 ISBN 已有记录，从已有记录中继承信息
         if existing_copies > 0:
             existing = Book.query.filter_by(isbn=normalized_isbn).first()
-            # 如果管理员没填某些字段，从已有记录继承
             if not title:
                 title = existing.title
             if not author:
@@ -360,24 +363,42 @@ def add_book():
             if not category:
                 category = existing.category
 
-        # 创建新图书（副本）
-        new_book = Book(
-            isbn=normalized_isbn,
-            title=title,
-            author=author,
-            publisher=publisher,
-            category=category,
-            description=description,
-            floor=floor,
-            area=area,
-            shelf=shelf,
-            cover_image=cover_image,
-            status='available'
-        )
-        db.session.add(new_book)
+        # 解析基础书架号中的数字部分，用于自动递增
+        import re as re_module
+        shelf_match = re_module.match(r'(\d+)', shelf)
+        base_shelf_num = int(shelf_match.group(1)) if shelf_match else 1
+
+        # 批量创建副本
+        added = 0
+        for i in range(copies_count):
+            # 第1册用原始位置，后续册书架号递增
+            if i == 0:
+                copy_shelf = shelf
+            else:
+                copy_shelf = f'{base_shelf_num + i:02d}架'
+
+            new_book = Book(
+                isbn=normalized_isbn,
+                title=title,
+                author=author,
+                publisher=publisher,
+                category=category,
+                description=description,
+                floor=floor,
+                area=area,
+                shelf=copy_shelf,
+                cover_image=cover_image,
+                status='available'
+            )
+            db.session.add(new_book)
+            added += 1
+
         db.session.commit()
-        book_count = Book.query.filter_by(isbn=normalized_isbn).count()
-        flash(f'成功添加《{title}》第 {book_count} 册（ISBN: {normalized_isbn}）。', 'success')
+        total = Book.query.filter_by(isbn=normalized_isbn).count()
+        if added > 1:
+            flash(f'成功入库《{title}》{added} 册（ISBN: {normalized_isbn}），馆藏共 {total} 册。', 'success')
+        else:
+            flash(f'成功入库《{title}》1 册（ISBN: {normalized_isbn}），馆藏共 {total} 册。', 'success')
         return redirect(url_for('books.book_list'))
 
     # GET 请求 → 显示添加表单
@@ -572,6 +593,10 @@ def edit_book(book_id):
 
     book = Book.query.get_or_404(book_id)
 
+    # 查询同 ISBN 所有副本
+    copies = Book.query.filter_by(isbn=book.isbn).order_by(Book.id.asc()).all()
+    copy_count = len(copies)
+
     if request.method == 'POST':
         # 逐字段更新图书信息
         book.title = request.form.get('title')
@@ -595,7 +620,8 @@ def edit_book(book_id):
         return redirect(url_for('books.book_list'))
 
     # GET → 显示编辑表单
-    return render_template('books/edit.html', book=book, publishers=get_publishers())
+    return render_template('books/edit.html', book=book, copies=copies,
+                           copy_count=copy_count, publishers=get_publishers())
 
 
 # ==================== 8. 收藏图书 ====================
