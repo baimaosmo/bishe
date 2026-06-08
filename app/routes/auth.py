@@ -1,10 +1,51 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from app.models import User, Student
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
+from app.models import User, Student, Teacher
 from app import db
+import os
+import re
+from uuid import uuid4
+from werkzeug.utils import secure_filename
 import pandas as pd
 from sqlalchemy.exc import IntegrityError
 
 auth_bp = Blueprint('auth', __name__)
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+
+def save_uploaded_avatar(file):
+    if not file or not file.filename:
+        return None
+    filename = secure_filename(file.filename)
+    if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in ALLOWED_IMAGE_EXTENSIONS:
+        flash('头像格式仅支持 png、jpg、jpeg、gif、webp。', 'error')
+        return None
+    ext = filename.rsplit('.', 1)[1].lower()
+    upload_dir = os.path.join(current_app.static_folder, 'uploads', 'avatars')
+    os.makedirs(upload_dir, exist_ok=True)
+    saved_name = f'{uuid4().hex}.{ext}'
+    file.save(os.path.join(upload_dir, saved_name))
+    return f'uploads/avatars/{saved_name}'
+
+
+def current_account():
+    if session.get('account_type') == 'student':
+        return Student.query.get(session.get('account_id'))
+    if session.get('account_type') == 'teacher':
+        return Teacher.query.get(session.get('account_id'))
+    return User.query.get(session.get('account_id'))
+
+
+def validate_password_strength(password):
+    if len(password or '') < 8:
+        return '密码长度不能少于 8 位。'
+    if not re.search(r'[A-Za-z]', password):
+        return '密码必须包含至少 1 个字母。'
+    if not re.search(r'\d', password):
+        return '密码必须包含至少 1 个数字。'
+    if password in {'12345678', 'password', 'Password1'}:
+        return '密码过于简单，请更换更安全的密码。'
+    return None
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -22,21 +63,34 @@ def login():
             session['account_type'] = 'student'
             session['username'] = student.name
             session['role'] = 'student'
+            session['avatar'] = student.avatar
             flash(f'欢迎回来，{student.name} 同学！', 'success')
             return redirect(url_for('books.book_list'))
 
-        # 策略 2：如果学生表没有，再去“注册用户表”里找
+        # 策略 2：使用教师工号登录
+        teacher = Teacher.query.filter_by(job_no=account).first()
+        if teacher and teacher.check_password(password):
+            session['account_id'] = teacher.id
+            session['account_type'] = 'teacher'
+            session['username'] = teacher.name
+            session['role'] = 'teacher'
+            session['avatar'] = teacher.avatar
+            flash(f'欢迎回来，{teacher.name} 老师！', 'success')
+            return redirect(url_for('books.book_list'))
+
+        # 策略 3：如果学生表和教师表没有，再去“注册用户表”里找
         user = User.query.filter_by(username=account).first()
         if user and user.check_password(password):
             session['account_id'] = user.id
             session['account_type'] = 'user'
             session['username'] = user.username
             session['role'] = user.role
+            session['avatar'] = user.avatar
             flash(f'登录成功，欢迎 {user.username}！', 'success')
             return redirect(url_for('books.book_list'))
 
         # 如果都没找到
-        flash('账号(学号)或密码错误，请重试！', 'error')
+        flash('账号、学号/工号或密码错误，请重试！', 'error')
 
     return render_template('auth/login.html')
 
@@ -151,18 +205,17 @@ def change_password():
             flash('两次输入的新密码不一致，请重新输入！', 'error')
             return redirect(url_for('auth.change_password'))
 
-        if len(new_password) < 6:
-            flash('新密码长度不能少于 6 位！', 'error')
+        password_error = validate_password_strength(new_password)
+        if password_error:
+            flash(password_error, 'error')
+            return redirect(url_for('auth.change_password'))
+
+        if old_password == new_password:
+            flash('新密码不能与当前密码相同。', 'error')
             return redirect(url_for('auth.change_password'))
 
         # 根据账户类型查找用户
-        account_type = session.get('account_type')
-        account_id = session.get('account_id')
-
-        if account_type == 'student':
-            account = Student.query.get(account_id)
-        else:
-            account = User.query.get(account_id)
+        account = current_account()
 
         if not account:
             flash('用户不存在！', 'error')
@@ -177,9 +230,27 @@ def change_password():
         account.set_password(new_password)
         db.session.commit()
         flash('密码修改成功！', 'success')
-        return redirect(url_for('books.book_list'))
+        return redirect(url_for('books.profile'))
 
-    return render_template('auth/change_password.html')
+    return redirect(url_for('books.profile'))
+
+
+@auth_bp.route('/upload_avatar', methods=['POST'])
+def upload_avatar():
+    if 'account_id' not in session:
+        return redirect(url_for('auth.login'))
+
+    account = current_account()
+    avatar = save_uploaded_avatar(request.files.get('avatar'))
+    if account and avatar:
+        account.avatar = avatar
+        session['avatar'] = avatar
+        db.session.commit()
+        flash('头像更新成功！', 'success')
+    elif not avatar:
+        flash('请选择有效的头像图片。', 'error')
+
+    return redirect(request.referrer or url_for('books.profile'))
 
 
 # ==================== 用户与权限管理功能 ====================
@@ -193,9 +264,10 @@ def manage_users():
     
     # 分别查询两张表的数据
     students = Student.query.all()
+    teachers = Teacher.query.all()
     users = User.query.all()
-    
-    return render_template('auth/manage_users.html', students=students, users=users)
+
+    return render_template('auth/manage_users.html', students=students, teachers=teachers, users=users)
 
 @auth_bp.route('/reset_password/<account_type>/<int:account_id>')
 def reset_password(account_type, account_id):
@@ -205,15 +277,18 @@ def reset_password(account_type, account_id):
     if account_type == 'student':
         account = Student.query.get_or_404(account_id)
         name = account.name
+    elif account_type == 'teacher':
+        account = Teacher.query.get_or_404(account_id)
+        name = account.name
     else:
         account = User.query.get_or_404(account_id)
         name = account.username
-        
-    # 一键重置密码为默认值 123456
-    account.set_password('123456')
+
+    default_password = 'Teacher@123' if account_type == 'teacher' else 'Student@123' if account_type == 'student' else 'User@123'
+    account.set_password(default_password)
     db.session.commit()
     
-    flash(f'已成功将用户【{name}】的密码重置为：123456', 'success')
+    flash(f'已成功将用户【{name}】的密码重置为：{default_password}', 'success')
     return redirect(url_for('auth.manage_users'))
 
 @auth_bp.route('/delete_user/<account_type>/<int:account_id>')
@@ -228,6 +303,8 @@ def delete_user(account_type, account_id):
 
     if account_type == 'student':
         account = Student.query.get_or_404(account_id)
+    elif account_type == 'teacher':
+        account = Teacher.query.get_or_404(account_id)
     else:
         account = User.query.get_or_404(account_id)
         

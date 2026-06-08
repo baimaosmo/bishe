@@ -32,7 +32,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="p-8">
-            <form action="{{ url_for('books.add_book') }}" method="POST">
+            <form action="{{ url_for('books.add_book') }}" method="POST" enctype="multipart/form-data">
                 
                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">基础信息</h3>
                 
@@ -54,7 +54,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">出版社</label>
-                        <input type="text" name="publisher" placeholder="如: 机械工业出版社" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                        <select name="publisher" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white transition">
+                            <option value="">从已有出版社中选择</option>
+                            {% for publisher in publishers %}
+                            <option value="{{ publisher.name }}">{{ publisher.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" name="publisher_custom" placeholder="或手动输入新的出版社名称" class="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                        <p class="text-xs text-gray-400 mt-1">如果填写了手动输入，将优先使用并自动加入出版社库。</p>
                     </div>
                 </div>
 
@@ -69,6 +76,12 @@
                         <option value="艺术">艺术</option>
                         <option value="其他">其他</option>
                     </select>
+                </div>
+
+                <div class="mb-6 rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-5">
+                    <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-image text-blue-500 mr-2"></i>图书封面</label>
+                    <input type="file" name="cover_image" accept="image/*" class="form-control bg-white">
+                    <p class="text-xs text-gray-400 mt-2">支持 png、jpg、jpeg、gif、webp，上传后将在书库和详情页展示。</p>
                 </div>
 
                 <!-- 物理位置信息区 -->

@@ -5,6 +5,23 @@ from app import db
 
 seats_bp = Blueprint('seats', __name__)
 
+
+def current_account_filter():
+    if session.get('account_type') == 'student':
+        return SeatReservation.student_id == session.get('account_id')
+    if session.get('account_type') == 'teacher':
+        return SeatReservation.teacher_id == session.get('account_id')
+    return SeatReservation.user_id == session.get('account_id')
+
+
+def assign_current_account(reservation):
+    if session.get('account_type') == 'student':
+        reservation.student_id = session.get('account_id')
+    elif session.get('account_type') == 'teacher':
+        reservation.teacher_id = session.get('account_id')
+    else:
+        reservation.user_id = session.get('account_id')
+
 def cleanup_expired_reservations():
     """
     逻辑核心：自动释放超时的座位 (3小时)
@@ -35,9 +52,9 @@ def index():
 
     current_floor = request.args.get('floor', 1, type=int)
     
-    active_reservation = SeatReservation.query.filter_by(
-        user_id=session['account_id'], 
-        status='active'
+    active_reservation = SeatReservation.query.filter(
+        current_account_filter(),
+        SeatReservation.status == 'active'
     ).first()
 
     remaining_minutes = None
@@ -95,8 +112,10 @@ def index():
 def book_seat(seat_id):
     if 'account_id' not in session: return redirect(url_for('auth.login'))
     
-    # 检查用户是否已经占了一个座位
-    existing = SeatReservation.query.filter_by(user_id=session['account_id'], status='active').first()
+    existing = SeatReservation.query.filter(
+        current_account_filter(),
+        SeatReservation.status == 'active'
+    ).first()
     if existing:
         flash('您当前已经预约了一个座位，请先释放后再选新座！', 'error')
         return redirect(url_for('seats.index'))
@@ -108,7 +127,8 @@ def book_seat(seat_id):
 
     try:
         # 创建预约记录并更新座位状态
-        reservation = SeatReservation(user_id=session['account_id'], seat_id=seat.id)
+        reservation = SeatReservation(seat_id=seat.id)
+        assign_current_account(reservation)
         seat.status = 'occupied'
         
         db.session.add(reservation)
@@ -128,7 +148,14 @@ def release_seat(reservation_id):
     
     reservation = SeatReservation.query.get_or_404(reservation_id)
     
-    if reservation.user_id != session['account_id'] and session.get('role') != 'admin':
+    if session.get('account_type') == 'student':
+        owns_reservation = reservation.student_id == session['account_id']
+    elif session.get('account_type') == 'teacher':
+        owns_reservation = reservation.teacher_id == session['account_id']
+    else:
+        owns_reservation = reservation.user_id == session['account_id']
+
+    if not owns_reservation and session.get('role') != 'admin':
         flash('无权操作！', 'error')
         return redirect(url_for('seats.index'))
 

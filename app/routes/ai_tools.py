@@ -1,9 +1,10 @@
 import json
 import requests
 import urllib3
-from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for,flash
-from app.models import Book
-import random
+from flask import Blueprint, render_template, request, jsonify, current_app, session, redirect, url_for, flash
+from sqlalchemy import func
+from app import db
+from app.models import Book, BorrowRecord, Seat, SeatReservation
 from datetime import datetime, timedelta
 
 # 隐藏因为跳过 SSL 校验而产生的控制台警告信息
@@ -18,44 +19,75 @@ def generate_report():
         flash('权限不足，仅管理员可查看数据大屏！', 'error')
         return redirect(url_for('books.book_list'))
 
-    # ================= 模拟本月数据生成 =================
-    
-    # 1. 生成近 30 天的日期列表
-    today = datetime.now()
-    date_list = [(today - timedelta(days=i)).strftime('%m-%d') for i in range(29, -1, -1)]
-    
-    # 2. 图书借阅趋势数据 (折线图)
-    borrow_trend = [random.randint(20, 100) for _ in range(30)]
-    
-    # 3. 热门图书分类数据 (饼图)
-    book_categories = [
-        {"value": 335, "name": "计算机科学"},
-        {"value": 310, "name": "文学"},
-        {"value": 234, "name": "自然科学"},
-        {"value": 135, "name": "哲学"},
-        {"value": 1548, "name": "其他"}
-    ]
-    
-    # 4. 座位热力图数据 (星期一到星期日，每天 8个时间段的使用率)
-    # ECharts 热力图数据格式: [x(星期), y(时间段), value(使用人数/热度)]
-    heatmap_data = []
-    for day in range(7):
-        for time_slot in range(8):
-            # 模拟：下午和晚上人多，周末人多
-            base_heat = random.randint(10, 50)
-            if time_slot in [3, 4, 5]: # 下午 14:00-20:00
-                base_heat += random.randint(30, 50)
-            if day in [5, 6]: # 周末
-                base_heat += random.randint(20, 40)
-            heatmap_data.append([day, time_slot, base_heat])
+    today = datetime.now().date()
+    start_date = today - timedelta(days=29)
+    date_list = [(start_date + timedelta(days=i)).strftime('%m-%d') for i in range(30)]
+    borrow_counts = {
+        row.day.strftime('%m-%d'): row.count
+        for row in db.session.query(
+            func.date(BorrowRecord.borrow_time).label('day'),
+            func.count(BorrowRecord.id).label('count')
+        ).filter(func.date(BorrowRecord.borrow_time) >= start_date)
+        .group_by(func.date(BorrowRecord.borrow_time))
+        .all()
+    }
+    borrow_trend = [borrow_counts.get(day, 0) for day in date_list]
 
-    # 5. AI 生成的文本摘要（这里可以接真实的 AI 接口，暂时用预设文本）
-    ai_summary = f"""
-    基于本月的大数据分析：
-    本月图书馆总借阅量达到稳步增长，其中【计算机科学】类图书最受学生欢迎。
-    在自习室选座方面，周六和周日的下午 14:00 - 18:00 是全馆座位的满负荷高峰期（热力图呈深红色）。
-    建议管理员在周末高峰时段加强占座巡视，并考虑在下个月增加【计算机科学】相关新书的采购预算。
-    """
+    category_rows = db.session.query(
+        Book.category,
+        func.count(BorrowRecord.id).label('count')
+    ).join(BorrowRecord, BorrowRecord.book_id == Book.id)
+    category_rows = category_rows.group_by(Book.category).order_by(func.count(BorrowRecord.id).desc()).all()
+    book_categories = [
+        {"value": count, "name": category or "未分类"}
+        for category, count in category_rows
+    ]
+    if not book_categories:
+        book_categories = [
+            {"value": count, "name": category or "未分类"}
+            for category, count in db.session.query(Book.category, func.count(Book.id)).group_by(Book.category).all()
+        ]
+
+    heat_counts = {}
+    for reservation in SeatReservation.query.filter(SeatReservation.start_time >= datetime.combine(start_date, datetime.min.time())).all():
+        day_index = reservation.start_time.weekday()
+        hour = reservation.start_time.hour
+        if hour < 9:
+            slot = 0
+        elif hour < 11:
+            slot = 1
+        elif hour < 13:
+            slot = 2
+        elif hour < 15:
+            slot = 3
+        elif hour < 17:
+            slot = 4
+        elif hour < 19:
+            slot = 5
+        elif hour < 21:
+            slot = 6
+        else:
+            slot = 7
+        heat_counts[(day_index, slot)] = heat_counts.get((day_index, slot), 0) + 1
+    heatmap_data = [[day, slot, heat_counts.get((day, slot), 0)] for day in range(7) for slot in range(8)]
+
+    total_books = Book.query.count()
+    total_borrows = BorrowRecord.query.count()
+    active_borrows = BorrowRecord.query.filter_by(status='borrowing').count()
+    total_seats = Seat.query.count()
+    occupied_seats = Seat.query.filter_by(status='occupied').count()
+    top_category = book_categories[0]['name'] if book_categories else '暂无分类数据'
+    peak_heat = max(heatmap_data, key=lambda item: item[2]) if heatmap_data else [0, 0, 0]
+    days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    hours = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00']
+    occupancy_rate = round(occupied_seats / total_seats * 100, 1) if total_seats else 0
+
+    ai_summary = (
+        f"当前馆藏共 {total_books} 本，累计借阅 {total_borrows} 次，仍有 {active_borrows} 本处于借阅中。"
+        f"近 30 天借阅最高的分类是【{top_category}】。"
+        f"当前座位占用率为 {occupancy_rate}%，近 30 天预约高峰集中在 {days[peak_heat[0]]} {hours[peak_heat[1]]} 左右。"
+        "建议管理员结合热门分类补充馆藏，并在座位高峰时段加强巡检与释放异常占座。"
+    )
 
     return render_template(
         'ai/report.html', 
@@ -136,17 +168,6 @@ def api_match():
     except Exception as e:
         print(f"DeepSeek API 请求失败: {str(e)}")
         return jsonify({'error': 'AI 引擎暂时开小差了（网络连接不稳定），请稍后再试。'}), 500
-# ================= 新增：摘要与报告生成模块 =================
-
-@ai_bp.route('/report')
-def report_page():
-    """渲染摘要与报告生成页面"""
-    if 'account_id' not in session:
-        return redirect(url_for('auth.login'))
-    
-    # 获取馆藏图书列表，供用户在下拉菜单中选择
-    books = Book.query.order_by(Book.id.desc()).all()
-    return render_template('ai/report.html', books=books)
 
 @ai_bp.route('/api/generate-report', methods=['POST'])
 def api_generate_report():

@@ -4,23 +4,29 @@
 
 {% block content %}
 <div class="fade-in">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-800">馆藏图书管理</h2>
-            <p class="text-sm text-gray-500 mt-1">管理及检索馆内所有的图书资源与借阅状态。</p>
+    <section class="page-hero mb-7">
+        <div class="relative z-10 flex flex-col md:flex-row justify-between md:items-end gap-5">
+            <div>
+                <p class="text-blue-100 text-sm font-bold mb-2">BOOK COLLECTION</p>
+                <h2 class="page-title">馆藏图书管理</h2>
+                <p class="page-subtitle">管理、检索与收藏馆内图书资源，快速掌握借阅状态。</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                {% if session.get('role') != 'admin' %}
+                <a href="{{ url_for('books.my_favorites') }}" class="btn-secondary"><i class="fas fa-heart"></i> 我的收藏</a>
+                {% endif %}
+                {% if session.get('role') == 'admin' %}
+                <button class="btn-secondary">
+                    <i class="fas fa-file-export"></i> 导出数据
+                </button>
+                <a href="{{ url_for('books.add_book') }}" class="btn-primary">
+                    <i class="fas fa-plus"></i> 新增图书
+                </a>
+                {% endif %}
+            </div>
         </div>
-        
-        <div class="flex items-center space-x-3">
-            {% if session.get('role') == 'admin' %}
-            <button class="flex items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition font-medium text-sm">
-                <i class="fas fa-file-export mr-2 text-gray-400"></i> 导出数据
-            </button>
-            <a href="{{ url_for('books.add_book') }}" class="flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-800 transition font-medium text-sm">
-                <i class="fas fa-plus mr-2"></i> 新增图书
-            </a>
-            {% endif %}
-        </div>
-    </div>
+    </section>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -35,23 +41,23 @@
         {% endif %}
     {% endwith %}
 
-    <form method="GET" action="{{ url_for('books.book_list') }}" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-center">
+    <form method="GET" action="{{ url_for('books.book_list') }}" class="app-card p-4 mb-6 flex flex-wrap gap-4 items-center">
         <div class="flex-1 min-w-[240px] relative">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                 <i class="fas fa-search text-gray-400"></i>
             </span>
-            <input type="text" name="q" value="{{ search_query or '' }}" placeholder="输入书名、作者或 ISBN 按回车搜索..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm transition shadow-sm">
+            <input type="text" name="q" value="{{ search_query or '' }}" placeholder="输入书名、作者或 ISBN 按回车搜索..." class="form-control pl-10">
         </div>
         
-        <select name="category" class="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+        <select name="category" class="form-control w-auto min-w-[150px]">
             <option value="">全部分类</option>
             <option value="计算机科学">计算机科学</option>
             <option value="文学">文学</option>
             <option value="自然科学">自然科学</option>
         </select>
 
-        <button type="submit" class="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900 transition text-sm font-medium shadow-sm flex items-center">
-            <i class="fas fa-filter mr-2"></i> 筛选
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-filter"></i> 筛选
         </button>
         
         {% if search_query %}
@@ -59,7 +65,7 @@
         {% endif %}
     </form>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="table-shell">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -78,14 +84,27 @@
                     <tr class="hover:bg-blue-50/50 transition-colors duration-150">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                                {% if book.cover_image %}
+                                <img src="{{ url_for('static', filename=book.cover_image) }}" alt="{{ book.title }}" class="flex-shrink-0 h-14 w-11 rounded-lg object-cover shadow-sm border border-gray-100">
+                                {% else %}
+                                <div class="flex-shrink-0 h-14 w-11 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
                                     <i class="fas fa-book"></i>
                                 </div>
+                                {% endif %}
                                 <div class="ml-4">
                                     <div class="text-sm font-bold text-gray-900">{{ book.title }}</div>
                                     <div class="text-xs text-gray-500 mt-1">
                                         <span class="font-medium">ISBN:</span> {{ book.isbn }} | {{ book.author or '佚名' }}
                                     </div>
+                                    {% if session.get('role') != 'admin' %}
+                                    <div class="mt-2">
+                                        {% if book.id in favorite_book_ids %}
+                                        <span class="status-badge status-danger"><i class="fas fa-heart"></i> 已收藏</span>
+                                        {% else %}
+                                        <span class="status-badge status-muted"><i class="far fa-heart"></i> 未收藏</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </td>
@@ -134,11 +153,22 @@
                                         <i class="fas fa-trash-alt"></i>
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('books.book_detail', book_id=book.id) }}" 
+                                    <a href="{{ url_for('books.book_detail', book_id=book.id) }}"
                                     class="text-primary hover:text-blue-800 transition bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold">
                                         查看详情
                                     </a>
-                                    
+                                    {% if book.id in favorite_book_ids %}
+                                        <a href="{{ url_for('books.unfavorite_book', book_id=book.id) }}"
+                                        class="text-rose-500 hover:text-rose-800 transition bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg text-xs font-bold">
+                                            取消收藏
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('books.favorite_book', book_id=book.id) }}"
+                                        class="text-rose-500 hover:text-rose-800 transition bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg text-xs font-bold">
+                                            收藏
+                                        </a>
+                                    {% endif %}
+
                                     {% if book.status == 'available' %}
                                         <a href="{{ url_for('books.borrow_book', book_id=book.id) }}" 
                                         class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}智能图书推荐 - 智能图书管理系统{% endblock %}
+
+{% macro book_card(book, meta_label='', meta_value='') %}
+<article class="app-card p-5 hover:-translate-y-1 transition duration-200">
+    <div class="flex gap-4">
+        {% if book.cover_image %}
+        <img src="{{ url_for('static', filename=book.cover_image) }}" alt="{{ book.title }}" class="h-28 w-20 rounded-2xl object-cover shadow-md border border-white">
+        {% else %}
+        <div class="h-28 w-20 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-500 flex items-center justify-center text-2xl">
+            <i class="fas fa-book-open"></i>
+        </div>
+        {% endif %}
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-2">
+                {% if book.status == 'available' %}
+                <span class="status-badge status-success">可借阅</span>
+                {% else %}
+                <span class="status-badge status-warning">借阅中</span>
+                {% endif %}
+                {% if meta_label %}<span class="status-badge status-info">{{ meta_label }} {{ meta_value }}</span>{% endif %}
+            </div>
+            <h3 class="text-lg font-black text-slate-900 truncate">{{ book.title }}</h3>
+            <p class="text-sm text-slate-500 mt-1 truncate">{{ book.author or '未知作者' }} · {{ book.category or '未分类' }}</p>
+            <p class="text-xs text-slate-400 mt-2 truncate">{{ book.publisher or '未知出版社' }}</p>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <a href="{{ url_for('books.book_detail', book_id=book.id) }}" class="btn-primary py-2 px-3 text-xs">查看详情</a>
+                {% if session.get('role') != 'admin' %}
+                    {% if book.id in favorite_book_ids %}
+                    <a href="{{ url_for('books.unfavorite_book', book_id=book.id) }}" class="btn-danger py-2 px-3 text-xs">取消收藏</a>
+                    {% else %}
+                    <a href="{{ url_for('books.favorite_book', book_id=book.id) }}" class="btn-secondary py-2 px-3 text-xs"><i class="fas fa-heart"></i> 收藏</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</article>
+{% endmacro %}
+
+{% block content %}
+<div class="fade-in space-y-8">
+    <section class="page-hero">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+                <p class="text-blue-100 text-sm font-bold mb-2">SMART RECOMMENDATION</p>
+                <h2 class="page-title">智能图书推荐</h2>
+                <p class="page-subtitle">综合你的借阅、收藏偏好，以及全馆借阅量和收藏热度，为你推荐更值得读的书。</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% for category in preferred_categories %}
+                <span class="bg-white/15 text-white px-4 py-2 rounded-2xl text-sm font-bold border border-white/10">{{ category }}</span>
+                {% else %}
+                <span class="bg-white/15 text-white px-4 py-2 rounded-2xl text-sm font-bold border border-white/10">先借阅或收藏几本书，推荐会更精准</span>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {% if personalized_books %}
+    <section class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-2xl font-black text-slate-900">根据你的偏好推荐</h3>
+                <p class="text-sm text-slate-500 mt-1">来自你常借阅或收藏的分类。</p>
+            </div>
+            <span class="status-badge status-info"><i class="fas fa-wand-magic-sparkles"></i> 个性化</span>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            {% for book in personalized_books %}
+            {{ book_card(book, '偏好', book.category or '未分类') }}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-2xl font-black text-slate-900">借阅榜推荐</h3>
+                <p class="text-sm text-slate-500 mt-1">按全馆借阅次数排序，优先推荐高频阅读图书。</p>
+            </div>
+            <div class="space-y-4">
+                {% for book, borrow_count in popular_books %}
+                {{ book_card(book, '借阅', borrow_count) }}
+                {% else %}
+                <div class="empty-state">暂无借阅数据，先看看最新入库图书。</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-2xl font-black text-slate-900">收藏热度推荐</h3>
+                <p class="text-sm text-slate-500 mt-1">按读者收藏次数排序，发现大家正在关注的书。</p>
+            </div>
+            <div class="space-y-4">
+                {% for book, favorite_count in hot_favorites %}
+                {{ book_card(book, '收藏', favorite_count) }}
+                {% else %}
+                <div class="empty-state">暂无收藏热度数据。</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="space-y-4">
+        <div>
+            <h3 class="text-2xl font-black text-slate-900">新书补充推荐</h3>
+            <p class="text-sm text-slate-500 mt-1">当个性化数据不足时，优先展示最近入库的新书。</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+            {% for book in latest_books %}
+            {{ book_card(book) }}
+            {% else %}
+            <div class="md:col-span-2 xl:col-span-4 empty-state">暂无可推荐图书。</div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -25,7 +25,7 @@
         </div>
 
         <div class="p-8">
-            <form action="{{ url_for('books.edit_book', book_id=book.id) }}" method="POST">
+            <form action="{{ url_for('books.edit_book', book_id=book.id) }}" method="POST" enctype="multipart/form-data">
                 
                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">基础信息</h3>
                 
@@ -46,7 +46,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">出版社</label>
-                        <input type="text" name="publisher" value="{{ book.publisher or '' }}" placeholder="如: 机械工业出版社" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                        <select name="publisher" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white transition">
+                            <option value="">从已有出版社中选择</option>
+                            {% for publisher in publishers %}
+                            <option value="{{ publisher.name }}" {% if book.publisher == publisher.name %}selected{% endif %}>{{ publisher.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" name="publisher_custom" placeholder="或手动输入新的出版社名称" class="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition">
+                        <p class="text-xs text-gray-400 mt-1">当前：{{ book.publisher or '未设置' }}；手动输入会优先覆盖下拉选择。</p>
                     </div>
                 </div>
 
@@ -61,6 +68,21 @@
                         <option value="艺术" {% if book.category == '艺术' %}selected{% endif %}>艺术</option>
                         <option value="其他" {% if book.category == '其他' %}selected{% endif %}>其他</option>
                     </select>
+                </div>
+
+                <div class="mb-6 rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-5">
+                    <label class="block text-sm font-bold text-gray-700 mb-3"><i class="fas fa-image text-blue-500 mr-2"></i>图书封面</label>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                        {% if book.cover_image %}
+                        <img src="{{ url_for('static', filename=book.cover_image) }}" alt="{{ book.title }}" class="h-28 w-20 rounded-xl object-cover shadow-md border border-white">
+                        {% else %}
+                        <div class="h-28 w-20 rounded-xl bg-white text-gray-300 flex items-center justify-center border border-blue-100"><i class="fas fa-book text-2xl"></i></div>
+                        {% endif %}
+                        <div class="flex-1">
+                            <input type="file" name="cover_image" accept="image/*" class="form-control bg-white">
+                            <p class="text-xs text-gray-400 mt-2">重新上传会替换当前封面。</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 物理位置信息区 -->

@@ -52,7 +52,7 @@
                         <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
                             <!-- 重置密码按钮 -->
                             <a href="{{ url_for('auth.reset_password', account_type='student', account_id=stu.id) }}" 
-                               onclick="return confirm('确定将【{{ stu.name }}】的密码重置为 123456 吗？');"
+                               onclick="return confirm('确定将【{{ stu.name }}】的密码重置为 Student@123 吗？');"
                                class="text-orange-500 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded transition">
                                 <i class="fas fa-key mr-1"></i>重置密码
                             </a>
@@ -70,7 +70,50 @@
         </div>
     </div>
 
-    <!-- 区块 2：注册用户表 (users) -->
+    <!-- 区块 2：教师用户表 (teachers) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div class="bg-emerald-50/50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="font-bold text-gray-700"><i class="fas fa-chalkboard-teacher text-emerald-600 mr-2"></i>教师工号用户</h3>
+            <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">共 {{ teachers|length }} 人</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">工号</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">姓名</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">部门</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for teacher in teachers %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ teacher.job_no }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ teacher.name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ teacher.department }}</td>
+                        <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
+                            <a href="{{ url_for('auth.reset_password', account_type='teacher', account_id=teacher.id) }}"
+                               onclick="return confirm('确定将【{{ teacher.name }}】的密码重置为 Teacher@123 吗？');"
+                               class="text-orange-500 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded transition">
+                                <i class="fas fa-key mr-1"></i>重置密码
+                            </a>
+                            <a href="{{ url_for('auth.delete_user', account_type='teacher', account_id=teacher.id) }}"
+                               onclick="return confirm('【警告】确定要彻底注销教师【{{ teacher.name }}】吗？此操作不可逆！');"
+                               class="text-red-500 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded transition">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">暂无教师用户</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 区块 3：注册用户表 (users) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="bg-purple-50/50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h3 class="font-bold text-gray-700"><i class="fas fa-globe text-purple-600 mr-2"></i>系统注册用户 & 管理员</h3>
@@ -105,7 +148,7 @@
                         </td>
                         <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
                             <a href="{{ url_for('auth.reset_password', account_type='user', account_id=u.id) }}" 
-                               onclick="return confirm('确定将【{{ u.username }}】的密码重置为 123456 吗？');"
+                               onclick="return confirm('确定将【{{ u.username }}】的密码重置为 User@123 吗？');"
                                class="text-orange-500 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded transition">
                                 <i class="fas fa-key mr-1"></i>重置密码
                             </a>

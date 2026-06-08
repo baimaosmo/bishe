@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from app.models import DriftBook, DriftRequest, Student, User
+from app.models import DriftBook, DriftRequest, Student, User, Teacher
 from app import db
 from datetime import datetime
 
@@ -17,6 +17,8 @@ def get_provider_info(account_type, account_id):
     """根据类型和ID获取提供者信息"""
     if account_type == 'student':
         return Student.query.get(account_id)
+    if account_type == 'teacher':
+        return Teacher.query.get(account_id)
     return User.query.get(account_id)
 
 
@@ -24,7 +26,7 @@ def get_provider_name(account_type, account_id):
     provider = get_provider_info(account_type, account_id)
     if not provider:
         return '未知'
-    return provider.name if account_type == 'student' else provider.username
+    return provider.username if account_type == 'user' else provider.name
 
 
 # 1. 漂流广场（列表页）
@@ -89,6 +91,8 @@ def publish():
         )
         if acc_type == 'student':
             book.provider_student_id = acc_id
+        elif acc_type == 'teacher':
+            book.provider_teacher_id = acc_id
         else:
             book.provider_user_id = acc_id
 
@@ -112,6 +116,7 @@ def detail(book_id):
     # 判断当前用户是否是该书的提供者
     is_provider = (
         (acc_type == 'student' and book.provider_student_id == acc_id) or
+        (acc_type == 'teacher' and book.provider_teacher_id == acc_id) or
         (acc_type == 'user' and book.provider_user_id == acc_id)
     )
 
@@ -123,7 +128,8 @@ def detail(book_id):
     # 当前用户是否已申请
     already_requested = DriftRequest.query.filter_by(book_id=book.id).filter(
         (DriftRequest.receiver_user_id == acc_id) if acc_type == 'user'
-        else (DriftRequest.receiver_student_id == acc_id)
+        else ((DriftRequest.receiver_teacher_id == acc_id) if acc_type == 'teacher'
+              else (DriftRequest.receiver_student_id == acc_id))
     ).first()
 
     return render_template('crossing/detail.html',
@@ -149,6 +155,7 @@ def request_book(book_id):
     # 不能申请自己的书
     is_provider = (
         (acc_type == 'student' and book.provider_student_id == acc_id) or
+        (acc_type == 'teacher' and book.provider_teacher_id == acc_id) or
         (acc_type == 'user' and book.provider_user_id == acc_id)
     )
     if is_provider:
@@ -158,7 +165,8 @@ def request_book(book_id):
     # 检查是否已申请
     existing = DriftRequest.query.filter_by(book_id=book_id).filter(
         (DriftRequest.receiver_user_id == acc_id) if acc_type == 'user'
-        else (DriftRequest.receiver_student_id == acc_id)
+        else ((DriftRequest.receiver_teacher_id == acc_id) if acc_type == 'teacher'
+              else (DriftRequest.receiver_student_id == acc_id))
     ).first()
     if existing:
         flash('您已经提交过申请，请等待提供者处理！', 'error')
@@ -168,6 +176,8 @@ def request_book(book_id):
     dr = DriftRequest(book_id=book_id, message=message if message else None)
     if acc_type == 'student':
         dr.receiver_student_id = acc_id
+    elif acc_type == 'teacher':
+        dr.receiver_teacher_id = acc_id
     else:
         dr.receiver_user_id = acc_id
 
@@ -194,6 +204,9 @@ def my_crossing():
     elif acc_type == 'student':
         my_books = DriftBook.query.filter_by(provider_student_id=acc_id).order_by(DriftBook.publish_time.desc()).all()
         my_requests = DriftRequest.query.filter_by(receiver_student_id=acc_id).order_by(DriftRequest.create_time.desc()).all()
+    elif acc_type == 'teacher':
+        my_books = DriftBook.query.filter_by(provider_teacher_id=acc_id).order_by(DriftBook.publish_time.desc()).all()
+        my_requests = DriftRequest.query.filter_by(receiver_teacher_id=acc_id).order_by(DriftRequest.create_time.desc()).all()
     else:
         my_books = DriftBook.query.filter_by(provider_user_id=acc_id).order_by(DriftBook.publish_time.desc()).all()
         my_requests = DriftRequest.query.filter_by(receiver_user_id=acc_id).order_by(DriftRequest.create_time.desc()).all()
@@ -229,6 +242,7 @@ def handle_request(request_id, action):
     # 只有书的提供者或管理员才能操作
     is_provider = (
         (acc_type == 'student' and book.provider_student_id == acc_id) or
+        (acc_type == 'teacher' and book.provider_teacher_id == acc_id) or
         (acc_type == 'user' and book.provider_user_id == acc_id)
     )
     is_admin = session.get('role') == 'admin'
@@ -242,6 +256,8 @@ def handle_request(request_id, action):
         # 记录领取者
         if dr.receiver_student_id:
             book.receiver_student_id = dr.receiver_student_id
+        elif dr.receiver_teacher_id:
+            book.receiver_teacher_id = dr.receiver_teacher_id
         else:
             book.receiver_user_id = dr.receiver_user_id
         # 拒绝该书的其他申请
