@@ -179,8 +179,8 @@ class Book(db.Model):
     author = db.Column(db.String(50), nullable=False, comment='作者')
     # 出版社
     publisher = db.Column(db.String(100), comment='出版社')
-    # ISBN 号，唯一且必填，用于图书去重
-    isbn = db.Column(db.String(20), unique=True, nullable=False, comment='ISBN号')
+    # ISBN 号，必填。同一 ISBN 可有多条记录（多册副本）
+    isbn = db.Column(db.String(20), nullable=False, comment='ISBN号')
     # 图书分类（如"计算机"、"文学"、"人工智能"等）
     category = db.Column(db.String(50), comment='分类')
 

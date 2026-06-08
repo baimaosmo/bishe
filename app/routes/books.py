@@ -271,11 +271,29 @@ def book_list():
         query = query.filter(Book.category == category)
 
     # 按入库时间倒序排列，最新的在前面
-    books = query.order_by(Book.add_time.desc()).all()
+    all_books = query.order_by(Book.add_time.desc()).all()
+
+    # 按 ISBN 分组，统计每组的册数和可借数
+    from collections import OrderedDict
+    isbn_groups = OrderedDict()  # 保持插入顺序
+    for book in all_books:
+        if book.isbn not in isbn_groups:
+            isbn_groups[book.isbn] = {
+                'first_book': book,       # 该ISBN的第一本（用于展示信息）
+                'total': 0,
+                'available': 0,
+                'book_ids': []            # 所有册的ID列表
+            }
+        isbn_groups[book.isbn]['total'] += 1
+        isbn_groups[book.isbn]['book_ids'].append(book.id)
+        if book.status == 'available':
+            isbn_groups[book.isbn]['available'] += 1
+
+    book_groups = list(isbn_groups.values())
 
     # 获取当前用户已收藏的图书 ID 集合（用于前端显示收藏状态图标）
     favorite_book_ids = set()
-    if session.get('role') != 'admin':  # 管理员不需要收藏功能
+    if session.get('role') != 'admin':
         favorite_book_ids = {
             favorite.book_id
             for favorite in BookFavorite.query.filter(current_account_filter(BookFavorite)).all()
@@ -283,7 +301,7 @@ def book_list():
 
     # 渲染列表模板
     return render_template('books/list.html',
-                           books=books,
+                           book_groups=book_groups,
                            search_query=search_query,
                            category=category,
                            favorite_book_ids=favorite_book_ids)
@@ -326,28 +344,41 @@ def add_book():
         # 保存上传的封面图片
         cover_image = save_uploaded_image(request.files.get('cover_image'), 'book_covers')
 
-        # 查重：ISBN 已存在则拒绝
-        if Book.query.filter_by(isbn=normalized_isbn).first():
-            flash(f'添加失败：ISBN {normalized_isbn} 已存在！', 'error')
-        else:
-            # 创建新图书对象
-            new_book = Book(
-                isbn=normalized_isbn,
-                title=title,
-                author=author,
-                publisher=publisher,
-                category=category,
-                description=description,
-                floor=floor,
-                area=area,
-                shelf=shelf,
-                cover_image=cover_image,
-                status='available'  # 新书默认可借
-            )
-            db.session.add(new_book)
-            db.session.commit()
-            flash(f'成功添加图书：《{title}》', 'success')
-            return redirect(url_for('books.book_list'))
+        # 查询同 ISBN 的已有册数
+        existing_copies = Book.query.filter_by(isbn=normalized_isbn).count()
+
+        # 如果该 ISBN 已有记录，从已有记录中继承书名/作者/封面等信息（管理员可覆盖）
+        if existing_copies > 0:
+            existing = Book.query.filter_by(isbn=normalized_isbn).first()
+            # 如果管理员没填某些字段，从已有记录继承
+            if not title:
+                title = existing.title
+            if not author:
+                author = existing.author
+            if not cover_image:
+                cover_image = existing.cover_image
+            if not category:
+                category = existing.category
+
+        # 创建新图书（副本）
+        new_book = Book(
+            isbn=normalized_isbn,
+            title=title,
+            author=author,
+            publisher=publisher,
+            category=category,
+            description=description,
+            floor=floor,
+            area=area,
+            shelf=shelf,
+            cover_image=cover_image,
+            status='available'
+        )
+        db.session.add(new_book)
+        db.session.commit()
+        book_count = Book.query.filter_by(isbn=normalized_isbn).count()
+        flash(f'成功添加《{title}》第 {book_count} 册（ISBN: {normalized_isbn}）。', 'success')
+        return redirect(url_for('books.book_list'))
 
     # GET 请求 → 显示添加表单
     return render_template('books/add.html', publishers=get_publishers())
@@ -368,10 +399,16 @@ def borrow_book(book_id):
     # 获取图书，不存在则返回 404
     book = Book.query.get_or_404(book_id)
 
-    # 校验图书是否可借
+    # 如果指定册不可借，自动查找同 ISBN 的第一本可借副本
     if book.status != 'available':
-        flash('该书已被借出或不可用！', 'error')
-        return redirect(url_for('books.book_list'))
+        available_copy = Book.query.filter_by(
+            isbn=book.isbn, status='available'
+        ).first()
+        if available_copy:
+            book = available_copy
+        else:
+            flash('该书所有副本均已被借出！', 'error')
+            return redirect(url_for('books.book_list'))
 
     try:
         # 创建借阅记录
@@ -467,6 +504,11 @@ def book_detail(book_id):
     # 获取图书
     book = Book.query.get_or_404(book_id)
 
+    # 查询同 ISBN 的所有副本
+    copies = Book.query.filter_by(isbn=book.isbn).order_by(Book.id.asc()).all()
+    total_copies = len(copies)
+    available_copies = sum(1 for c in copies if c.status == 'available')
+
     # 初始化页面变量
     is_favorite = False    # 是否已收藏
     user_review = None     # 当前用户的评价
@@ -504,6 +546,9 @@ def book_detail(book_id):
 
     return render_template('books/detail.html',
                            book=book,
+                           copies=copies,
+                           total_copies=total_copies,
+                           available_copies=available_copies,
                            is_favorite=is_favorite,
                            user_review=user_review,
                            can_review=can_review,

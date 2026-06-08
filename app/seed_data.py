@@ -164,6 +164,34 @@ def seed_publishers_and_books():
         if book and book.cover_image != cover_image:
             book.cover_image = cover_image
 
+    # 为部分图书创建副本（同ISBN多册）
+    extra_copies = [
+        ("9787302500011", 2, "B区", "B-03"),   # Python程序设计基础 第2册
+        ("9787040406641", 2, "B区", "B-04"),   # 数据库系统概论 第2册
+        ("9787302500066", 2, "C区", "C-03"),   # 数据结构与算法 第2册
+    ]
+    for isbn, floor, area, shelf in extra_copies:
+        existing = Book.query.filter_by(isbn=isbn).first()
+        if existing:
+            # 检查该ISBN是否已有副本
+            copy_count = Book.query.filter_by(isbn=isbn).count()
+            if copy_count < 2:
+                new_copy = Book(
+                    isbn=isbn,
+                    title=existing.title,
+                    author=existing.author,
+                    publisher=existing.publisher,
+                    category=existing.category,
+                    description=existing.description,
+                    cover_image=existing.cover_image,
+                    floor=floor,
+                    area=area,
+                    shelf=shelf,
+                    status='available',
+                    add_time=existing.add_time
+                )
+                db.session.add(new_copy)
+
 
 # ==================== 3. 创建座位 ====================
 

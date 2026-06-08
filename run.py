@@ -73,6 +73,19 @@ def ensure_schema_compatibility():
                 if column not in table_columns[table]:
                     db.session.execute(text(f'ALTER TABLE {table} ADD COLUMN {column} INT NULL'))
 
+    # 移除 books 表 isbn 字段的唯一索引（支持副本/多册同ISBN）
+    if 'books' in inspector.get_table_names():
+        # 获取 books 表的所有索引
+        indexes = inspector.get_indexes('books')
+        for idx in indexes:
+            # 找到 isbn 列上的唯一索引
+            if 'isbn' in idx.get('column_names', []) and idx.get('unique', False):
+                try:
+                    db.session.execute(text(f'ALTER TABLE books DROP INDEX {idx["name"]}'))
+                    print(f"已移除 books.isbn 唯一索引 ({idx['name']})，现支持同一ISBN多册副本。")
+                except Exception:
+                    pass  # 索引可能已被移除
+
     # 提交所有 DDL（表结构修改）操作
     db.session.commit()
 

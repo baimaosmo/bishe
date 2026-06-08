@@ -41,10 +41,10 @@
                 </div>
                 <div class="p-8 md:w-2/3">
                     <div class="flex flex-wrap items-center gap-3 mb-6">
-                        {% if book.status == 'available' %}
-                        <span class="status-badge status-success"><i class="fas fa-check-circle"></i> 可借阅</span>
+                        {% if available_copies > 0 %}
+                        <span class="status-badge status-success"><i class="fas fa-check-circle"></i> 可借 {{ available_copies }}/{{ total_copies }} 册</span>
                         {% else %}
-                        <span class="status-badge status-warning"><i class="fas fa-clock"></i> 借阅中</span>
+                        <span class="status-badge status-warning"><i class="fas fa-clock"></i> 已借完 (共{{ total_copies }}册)</span>
                         {% endif %}
                         <span class="status-badge status-info">{{ book.category or '未分类' }}</span>
                         {% if average_rating %}
@@ -64,13 +64,43 @@
                     </div>
 
                     <div class="mt-7 flex flex-col sm:flex-row gap-3">
-                        {% if book.status == 'available' and session.get('role') != 'admin' %}
+                        {% if available_copies > 0 and session.get('role') != 'admin' %}
                         <a href="{{ url_for('books.borrow_book', book_id=book.id) }}" class="btn-primary flex-1"><i class="fas fa-hand-holding-heart"></i> 一键借阅</a>
                         {% endif %}
                         {% if session.get('role') == 'admin' %}
                         <a href="{{ url_for('books.edit_book', book_id=book.id) }}" class="btn-primary flex-1"><i class="fas fa-pen"></i> 编辑图书</a>
                         {% endif %}
                     </div>
+
+                    <!-- 副本清单 -->
+                    {% if total_copies > 1 %}
+                    <div class="mt-6 pt-6 border-t border-gray-100">
+                        <h4 class="text-sm font-bold text-gray-700 mb-3">
+                            <i class="fas fa-cubes mr-2 text-blue-500"></i>馆藏副本明细（共 {{ total_copies }} 册）
+                        </h4>
+                        <div class="space-y-2">
+                            {% for copy in copies %}
+                            <div class="flex items-center justify-between px-4 py-2.5 rounded-xl {% if copy.status == 'available' %}bg-green-50 border border-green-100{% else %}bg-orange-50 border border-orange-100{% endif %}">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-bold text-gray-500">#{{ loop.index }}</span>
+                                    <span class="text-sm font-medium text-gray-800">{{ copy.floor }}F {{ copy.area }} {{ copy.shelf }}</span>
+                                </div>
+                                <div>
+                                    {% if copy.status == 'available' %}
+                                    <span class="text-xs font-bold text-green-700">
+                                        <i class="fas fa-check-circle mr-1"></i>可借
+                                    </span>
+                                    {% else %}
+                                    <span class="text-xs font-bold text-orange-700">
+                                        <i class="fas fa-clock mr-1"></i>已借出
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
