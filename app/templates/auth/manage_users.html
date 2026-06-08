@@ -9,7 +9,7 @@
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
                 <i class="fas fa-users-cog text-primary mr-3"></i>用户与权限中心
             </h2>
-            <p class="text-sm text-gray-500 mt-1">管理系统内的校内教务学生与外部注册人员账号。</p>
+            <p class="text-sm text-gray-500 mt-1">管理学生、教师和管理员账号，注册用户统一进入学生或教师表。</p>
         </div>
     </div>
 
@@ -30,7 +30,7 @@
     <!-- 区块 1：校内学生表 (students) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
         <div class="bg-blue-50/50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700"><i class="fas fa-user-graduate text-blue-600 mr-2"></i>教务导入学生</h3>
+            <h3 class="font-bold text-gray-700"><i class="fas fa-user-graduate text-blue-600 mr-2"></i>学生用户</h3>
             <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">共 {{ students|length }} 人</span>
         </div>
         <div class="overflow-x-auto">
@@ -39,7 +39,8 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">学号</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">姓名</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">院系</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">性别</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">专业</th>
                         <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">操作</th>
                     </tr>
                 </thead>
@@ -48,7 +49,8 @@
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ stu.student_no }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ stu.name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ stu.department }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ stu.gender or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ stu.major or stu.department or '-' }}</td>
                         <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
                             <!-- 重置密码按钮 -->
                             <a href="{{ url_for('auth.reset_password', account_type='student', account_id=stu.id) }}" 
@@ -73,7 +75,7 @@
     <!-- 区块 2：教师用户表 (teachers) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
         <div class="bg-emerald-50/50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700"><i class="fas fa-chalkboard-teacher text-emerald-600 mr-2"></i>教师工号用户</h3>
+            <h3 class="font-bold text-gray-700"><i class="fas fa-chalkboard-teacher text-emerald-600 mr-2"></i>教师用户</h3>
             <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">共 {{ teachers|length }} 人</span>
         </div>
         <div class="overflow-x-auto">
@@ -82,7 +84,8 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">工号</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">姓名</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">部门</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">性别</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">专业</th>
                         <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">操作</th>
                     </tr>
                 </thead>
@@ -91,7 +94,8 @@
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ teacher.job_no }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ teacher.name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ teacher.department }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ teacher.gender or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ teacher.major or teacher.department or '-' }}</td>
                         <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
                             <a href="{{ url_for('auth.reset_password', account_type='teacher', account_id=teacher.id) }}"
                                onclick="return confirm('确定将【{{ teacher.name }}】的密码重置为 Teacher@123 吗？');"
@@ -106,7 +110,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">暂无教师用户</td></tr>
+                    <tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">暂无教师用户</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -116,7 +120,7 @@
     <!-- 区块 3：注册用户表 (users) -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="bg-purple-50/50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700"><i class="fas fa-globe text-purple-600 mr-2"></i>系统注册用户 & 管理员</h3>
+            <h3 class="font-bold text-gray-700"><i class="fas fa-user-shield text-purple-600 mr-2"></i>管理员与历史普通账号</h3>
             <span class="text-xs font-bold bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">共 {{ users|length }} 人</span>
         </div>
         <div class="overflow-x-auto">

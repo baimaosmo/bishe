@@ -1,0 +1,72 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #F8FBFF
+  BorderColor #4F6F91
+  ArrowColor #506070
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #8A96A3
+}
+
+actor "普通注册用户" as Guest
+actor "学生用户" as Student
+actor "教师用户" as Teacher
+actor "读者用户" as Reader
+actor "管理员" as Admin
+
+Guest --|> Reader
+Student --|> Reader
+Teacher --|> Reader
+
+rectangle "智慧图书馆管理系统" {
+  usecase "登录系统" as UC_Login
+  usecase "注册账号\n(普通注册用户)" as UC_Register
+  usecase "检索与查看图书" as UC_Search
+  usecase "借阅与归还图书" as UC_Borrow
+  usecase "收藏与评价图书" as UC_FavoriteReview
+  usecase "查看推荐书单" as UC_Recommend
+  usecase "预约与释放座位" as UC_Seat
+  usecase "参与图书漂流" as UC_Drift
+  usecase "维护个人信息" as UC_Profile
+  usecase "AI 智能检索" as UC_AI
+
+  usecase "图书信息管理" as UC_BookManage
+  usecase "用户账号管理" as UC_UserManage
+  usecase "批量导入学生账号" as UC_Import
+  usecase "借阅与座位数据查看" as UC_DataView
+  usecase "图书评价审核" as UC_Audit
+  usecase "图书漂流管理" as UC_DriftManage
+  usecase "数据统计分析" as UC_Dashboard
+}
+
+Reader --> UC_Login
+Reader --> UC_Register
+Reader --> UC_Search
+Reader --> UC_Borrow
+Reader --> UC_FavoriteReview
+Reader --> UC_Recommend
+Reader --> UC_Seat
+Reader --> UC_Drift
+Reader --> UC_Profile
+Reader --> UC_AI
+
+Admin --> UC_Login
+Admin --> UC_BookManage
+Admin --> UC_UserManage
+Admin --> UC_Import
+Admin --> UC_DataView
+Admin --> UC_Audit
+Admin --> UC_DriftManage
+Admin --> UC_Dashboard
+
+UC_Borrow ..> UC_Search : <<include>>
+UC_FavoriteReview ..> UC_Borrow : <<extend>>
+UC_Recommend ..> UC_Search : <<include>>
+UC_Audit ..> UC_FavoriteReview : <<include>>
+UC_Import ..> UC_UserManage : <<include>>
+UC_Dashboard ..> UC_DataView : <<include>>
+@enduml

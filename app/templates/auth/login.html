@@ -512,7 +512,7 @@
                     <i class="fas fa-fingerprint"></i>
                     <h1>统一身份认证</h1>
                 </div>
-                <p>支持学号、教师工号或已注册账号登录</p>
+                <p>学生使用学号登录，教师使用工号登录，管理员使用账号登录</p>
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -528,7 +528,7 @@
 
             <form action="{{ url_for('auth.login') }}" method="POST">
                 <div class="form-group">
-                    <label>学号 / 工号 / 用户名</label>
+                    <label>学号 / 工号 / 管理员账号</label>
                     <div class="input-wrapper">
                         <i class="fas fa-user"></i>
                         <input type="text" name="account" required placeholder="学生输学号，教师输工号">
@@ -539,18 +539,18 @@
                     <label>登录密码</label>
                     <div class="input-wrapper">
                         <i class="fas fa-lock"></i>
-                        <input type="password" name="password" required placeholder="学生初始密码 123456，教师示例 Teacher@123">
+                        <input type="password" name="password" required placeholder="请输入登录密码">
                     </div>
                 </div>
 
                 <button type="submit" class="btn-login">登 录 系 统</button>
             </form>
 
-            <div class="divider"><span>校外访客</span></div>
+            <div class="divider"><span>没有账号</span></div>
 
             <div class="register-link">
                 <a href="{{ url_for('auth.register') }}">
-                    <i class="fas fa-user-plus"></i> 注册新账号
+                    <i class="fas fa-user-plus"></i> 注册学生/教师账号
                 </a>
             </div>
         </div>

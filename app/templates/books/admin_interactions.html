@@ -8,9 +8,22 @@
         <div class="relative z-10">
             <p class="text-blue-100 text-sm font-bold mb-2">ADMIN OPERATIONS</p>
             <h2 class="page-title">互动运营管理</h2>
-            <p class="page-subtitle">审核评价、洞察收藏热度、追踪借阅与座位行为，让管理员掌握用户真实需求。</p>
+            <p class="page-subtitle">使用 AI 审核评价、洞察收藏热度、追踪借阅与座位行为，让管理员掌握用户真实需求。</p>
         </div>
     </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <section class="space-y-2">
+                {% for category, message in messages %}
+                <div class="p-4 rounded-xl text-sm flex items-center shadow-sm {% if category == 'error' %}bg-red-50 text-red-700 border-l-4 border-red-500{% else %}bg-green-50 text-green-700 border-l-4 border-green-500{% endif %}">
+                    <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </section>
+        {% endif %}
+    {% endwith %}
 
     <section class="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div class="stat-card"><p class="text-sm text-slate-500">评价总数</p><p class="text-4xl font-black text-slate-900 mt-3">{{ reviews|length }}</p></div>
@@ -22,8 +35,8 @@
     <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div class="app-card p-6">
             <div class="flex items-center justify-between mb-5">
-                <h3 class="text-xl font-black text-slate-900">评价审核</h3>
-                <span class="status-badge status-info">Review Queue</span>
+                <h3 class="text-xl font-black text-slate-900">AI 评价审核</h3>
+                <span class="status-badge status-info">AI Review</span>
             </div>
             <div class="space-y-4 max-h-[520px] overflow-y-auto pr-1">
                 {% for review in reviews %}
@@ -45,10 +58,12 @@
                         {% for i in range(review.rating) %}<i class="fas fa-star"></i>{% endfor %}
                     </div>
                     <p class="text-sm text-slate-600 mt-3 leading-6">{{ review.content }}</p>
-                    <div class="flex gap-3 mt-4">
-                        <a href="{{ url_for('books.moderate_review', review_id=review.id, action='approved') }}" class="btn-soft">通过</a>
-                        <a href="{{ url_for('books.moderate_review', review_id=review.id, action='rejected') }}" class="btn-danger">驳回</a>
-                    </div>
+                    <form method="POST" action="{{ url_for('books.ai_review_moderate', review_id=review.id) }}" class="mt-4">
+                        <button type="submit" class="btn-soft">
+                            <i class="fas fa-robot mr-1"></i>
+                            {{ 'AI 审核' if review.status == 'pending' else '重新 AI 审核' }}
+                        </button>
+                    </form>
                 </div>
                 {% else %}
                 <div class="empty-state">暂无评价需要处理。</div>
@@ -101,7 +116,7 @@
                 <tbody class="divide-y divide-slate-100 text-sm">
                     {% for record in borrow_records %}
                     <tr>
-                        <td class="py-4 font-bold text-slate-800">{{ record.user.username if record.user else record.student.name }}</td>
+                        <td class="py-4 font-bold text-slate-800">{{ record.student.name if record.student else (record.teacher.name if record.teacher else (record.user.username if record.user else '未知用户')) }}</td>
                         <td>{{ record.book.title }}</td>
                         <td>{{ record.borrow_time.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ record.return_time.strftime('%Y-%m-%d %H:%M') if record.return_time else '-' }}</td>

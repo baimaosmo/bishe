@@ -1,0 +1,51 @@
+flowchart LR
+    reader["参与者：读者用户<br/>普通注册用户 / 学生用户 / 教师用户"]
+    admin["参与者：管理员"]
+
+    subgraph system["智慧图书馆管理系统"]
+        login(("登录系统"))
+        register(("注册账号<br/>普通注册用户"))
+        bookSearch(("检索与查看图书"))
+        borrow(("借阅与归还图书"))
+        favoriteReview(("收藏与评价图书"))
+        recommend(("查看推荐书单"))
+        seat(("预约与释放座位"))
+        driftUser(("参与图书漂流"))
+        profile(("维护个人信息"))
+        aiSearch(("AI 智能检索"))
+
+        bookManage(("图书信息管理"))
+        userManage(("用户账号管理"))
+        importStudent(("批量导入学生账号"))
+        dataView(("借阅与座位数据查看"))
+        reviewAudit(("图书评价审核"))
+        driftManage(("图书漂流管理"))
+        dashboard(("数据统计分析"))
+    end
+
+    reader --- login
+    reader --- register
+    reader --- bookSearch
+    reader --- borrow
+    reader --- favoriteReview
+    reader --- recommend
+    reader --- seat
+    reader --- driftUser
+    reader --- profile
+    reader --- aiSearch
+
+    admin --- login
+    admin --- bookManage
+    admin --- userManage
+    admin --- importStudent
+    admin --- dataView
+    admin --- reviewAudit
+    admin --- driftManage
+    admin --- dashboard
+
+    borrow -. include .-> bookSearch
+    favoriteReview -. extend .-> borrow
+    recommend -. include .-> bookSearch
+    reviewAudit -. include .-> favoriteReview
+    importStudent -. include .-> userManage
+    dashboard -. include .-> dataView

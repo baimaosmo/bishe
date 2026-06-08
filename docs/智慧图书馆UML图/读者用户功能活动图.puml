@@ -1,0 +1,406 @@
+﻿@startuml 读者用户_注册登录活动图
+title 读者用户注册与登录活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入登录/注册页面;
+fork
+  :选择学生注册;
+  :填写学号、姓名\n性别、专业、密码;
+  :系统校验学号是否重复;
+  :写入学生用户表;
+fork again
+  :选择教师注册;
+  :填写工号、姓名\n性别、专业、密码;
+  :系统校验工号是否重复;
+  :写入教师用户表;
+fork again
+  :输入账号和密码登录;
+  :系统匹配学生表\n教师表或管理员表;
+  :登录成功后进入系统首页;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_个人中心活动图
+title 读者用户个人中心活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入个人中心页面;
+fork
+  :查看账号信息;
+fork again
+  :查看最近借阅记录;
+fork again
+  :查看收藏、评价、漂流统计;
+fork again
+  :查看当前预约座位;
+fork again
+  :上传并更新头像;
+fork again
+  :修改登录密码;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_图书检索查看活动图
+title 读者用户图书检索与查看活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入图书列表页面;
+fork
+  :按书名、作者或 ISBN 搜索;
+fork again
+  :按图书分类筛选;
+fork again
+  :查看图书封面、状态\n和馆藏位置;
+fork again
+  :进入图书详情页面;
+  :查看简介、评分\n和读者评价;
+fork again
+  :根据图书状态\n判断是否可借阅;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_图书推荐活动图
+title 读者用户图书推荐活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入图书推荐页面;
+fork
+  :系统读取借阅记录;
+fork again
+  :系统读取收藏记录;
+fork again
+  :分析用户偏好分类;
+fork again
+  :生成个性化推荐;
+fork again
+  :生成借阅\n热度推荐;
+fork again
+  :生成收藏\n热度推荐;
+fork again
+  :展示最新入库图书;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_借阅归还活动图
+title 读者用户借阅与归还活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入图书详情或借阅记录页面;
+fork
+  :选择可借图书;
+  :提交借阅请求;
+  :系统创建借阅记录;
+  :更新图书状态\n为已借出;
+fork again
+  :进入我的借阅页面;
+  :查看借阅中和已归还图书;
+fork again
+  :选择归还图书;
+  :系统记录归还时间;
+  :更新图书状态\n为可借阅;
+fork again
+  :归还后进入评价入口;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_收藏评价活动图
+title 读者用户收藏与评价活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入图书详情页面;
+fork
+  :点击收藏图书;
+  :系统写入收藏记录;
+  :进入我的收藏页面查看;
+fork again
+  :取消收藏图书;
+  :系统删除收藏记录;
+fork again
+  :归还图书后填写评分和评价;
+  :系统提交评价\n待审核;
+fork again
+  :查看已审核通过\n的图书评价;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_选座管理活动图
+title 读者用户选座管理活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入选座管理页面;
+fork
+  :切换图书馆楼层;
+fork again
+  :查看楼层区域布局;
+fork again
+  :查看空闲、使用中\n和电源座位;
+fork again
+  :选择空闲座位;
+  :系统检查是否\n已有预约;
+  :创建座位\n预约记录;
+  :更新座位状态\n为使用中;
+fork again
+  :查看当前预约\n和剩余时间;
+fork again
+  :主动退座\n释放座位;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_图书漂流活动图
+title 读者用户图书漂流活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入图书漂流角页面;
+fork
+  :查看漂流图书列表;
+fork again
+  :按状态或课程筛选图书;
+fork again
+  :发布漂流图书;
+  :填写书名、课程\n新旧程度和描述;
+  :系统保存漂流图书;
+fork again
+  :查看漂流图书详情;
+  :提交领取申请和留言;
+fork again
+  :进入我的漂流;
+  :处理他人领取申请;
+fork again
+  :编辑或删除\n自己发布的漂流图书;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_AI智能搜索活动图
+title 读者用户 AI 智能搜索活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:进入 AI 智能搜索页面;
+fork
+  :输入自然语言\n检索需求;
+fork again
+  :选择快捷提问;
+fork again
+  :系统读取馆藏图书数据;
+fork again
+  :调用 AI 模型\n生成推荐结果;
+fork again
+  :查看推荐理由\n和相关图书;
+fork again
+  :继续追问\n形成多轮对话;
+fork again
+  :清空当前会话;
+end fork
+stop
+@enduml
+
+@startuml 读者用户_退出系统活动图
+title 读者用户退出系统活动图
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 14
+skinparam defaultFontStyle plain
+skinparam titleFontName Microsoft YaHei
+skinparam titleFontSize 18
+skinparam titleFontStyle plain
+skinparam dpi 150
+skinparam activity {
+  BackgroundColor #000000
+  BorderColor #000000
+  FontColor #FFFFFF
+  FontSize 14
+  FontStyle plain
+  MinimumWidth 160
+  StartColor #000000
+  EndColor #000000
+  BarColor #000000
+}
+start
+:点击退出登录;
+:系统清空\n会话信息;
+:返回登录页面;
+stop
+@enduml
+
+
+
+

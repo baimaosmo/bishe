@@ -3,21 +3,31 @@
 {% block title %}选座管理 - 智能图书管理系统{% endblock %}
 
 {% block content %}
-<div class="fade-in max-w-7xl mx-auto">
-    <!-- 页面标题 -->
-    <div class="mb-8 text-center">
-        <h2 class="text-3xl font-extrabold text-gray-800 mb-2 tracking-tight">
-            <i class="fas fa-th-large text-primary mr-2"></i>沉浸式自习室选座
-        </h2>
-        <p class="text-gray-400 text-sm">系统自动回收使用超过 3 小时的座位，请合理安排学习时间</p>
-    </div>
+<div class="fade-in max-w-7xl mx-auto space-y-7">
+    <section class="page-hero">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+                <p class="text-blue-100 text-sm font-bold mb-2">LIBRARY SEAT MAP</p>
+                <h2 class="page-title">图书馆空间选座</h2>
+                <p class="page-subtitle">{{ floor_layout.description }} 系统自动回收使用超过 3 小时的座位。</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                {% for f in [1, 2, 3] %}
+                <a href="{{ url_for('seats.index', floor=f) }}"
+                   class="inline-flex items-center justify-center min-w-20 px-5 py-3 rounded-2xl text-sm font-black border transition
+                          {% if current_floor == f %}bg-white text-primary border-white shadow-xl{% else %}bg-white/10 text-blue-50 border-white/15 hover:bg-white/20{% endif %}">
+                    <i class="fas fa-layer-group mr-2"></i>{{ f }}F
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
 
-    <!-- Flash 消息 -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="mb-6 max-w-2xl mx-auto">
+            <div class="space-y-2">
             {% for category, message in messages %}
-                <div class="p-4 rounded-2xl text-sm font-medium flex items-center justify-center shadow-lg {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %} animate-fade-in">
+                <div class="p-4 rounded-2xl text-sm font-bold flex items-center shadow-sm {% if category == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
                     <i class="fas {% if category == 'error' %}fa-times-circle{% else %}fa-check-circle{% endif %} mr-2 text-lg"></i>
                     {{ message }}
                 </div>
@@ -26,257 +36,411 @@
         {% endif %}
     {% endwith %}
 
-    <!-- 楼层统计卡片 -->
     {% if seats %}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mr-4 flex-shrink-0">
-                <i class="fas fa-layer-group text-blue-600 text-xl"></i>
-            </div>
-            <div>
-                <p class="text-2xl font-extrabold text-gray-800">{{ total_seats }}</p>
-                <p class="text-xs text-gray-400 font-medium">总座位数</p>
-            </div>
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <p class="text-sm text-slate-500">当前楼层</p>
+            <p class="text-3xl font-black text-slate-900 mt-2">{{ floor_layout.name }}</p>
         </div>
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mr-4 flex-shrink-0">
-                <i class="fas fa-check-circle text-green-600 text-xl"></i>
-            </div>
-            <div>
-                <p class="text-2xl font-extrabold text-green-600">{{ free_seats }}</p>
-                <p class="text-xs text-gray-400 font-medium">空闲可选</p>
-            </div>
+        <div class="stat-card">
+            <p class="text-sm text-slate-500">空闲可选</p>
+            <p class="text-4xl font-black text-emerald-600 mt-2">{{ free_seats }}</p>
         </div>
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center mr-4 flex-shrink-0">
-                <i class="fas fa-user-check text-orange-600 text-xl"></i>
-            </div>
-            <div>
-                <p class="text-2xl font-extrabold text-orange-600">{{ occupied_seats }}</p>
-                <p class="text-xs text-gray-400 font-medium">使用中</p>
-            </div>
+        <div class="stat-card">
+            <p class="text-sm text-slate-500">使用中</p>
+            <p class="text-4xl font-black text-amber-600 mt-2">{{ occupied_seats }}</p>
         </div>
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mr-4 flex-shrink-0">
-                <i class="fas fa-chart-pie text-purple-600 text-xl"></i>
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <p class="text-2xl font-extrabold text-purple-600">{{ occupancy_rate }}%</p>
-                </div>
-                <p class="text-xs text-gray-400 font-medium">使用率</p>
-            </div>
+        <div class="stat-card">
+            <p class="text-sm text-slate-500">楼层使用率</p>
+            <p class="text-4xl font-black text-blue-600 mt-2">{{ occupancy_rate }}%</p>
         </div>
-    </div>
+    </section>
     {% endif %}
 
-    <!-- 楼层选择器 -->
-    <div class="flex justify-center mb-10">
-        <div class="inline-flex p-1.5 bg-gray-100 rounded-3xl shadow-inner">
-            {% for f in [1, 2, 3] %}
-            <a href="{{ url_for('seats.index', floor=f) }}"
-               class="relative px-10 py-3 rounded-2xl font-bold text-sm transition-all duration-300
-                      {% if current_floor == f %}
-                      bg-white text-primary shadow-lg
-                      {% else %}
-                      text-gray-400 hover:text-gray-600 hover:bg-white/50
-                      {% endif %}">
-                <i class="fas fa-building mr-2"></i>{{ f }}F
-                {% if current_floor == f %}
-                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full"></span>
-                {% endif %}
-            </a>
+    {% if active_reservation %}
+    <section class="relative overflow-hidden rounded-3xl bg-white border-2 {% if show_warning %}border-red-300{% else %}border-blue-200{% endif %} shadow-sm">
+        {% if show_warning %}
+        <div class="bg-red-600 text-white text-xs font-black py-2 text-center tracking-wider">
+            <i class="fas fa-triangle-exclamation mr-1"></i> 当前座位即将到期
+        </div>
+        {% endif %}
+        <div class="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="h-14 w-14 rounded-2xl {% if show_warning %}bg-red-50 text-red-600{% else %}bg-blue-50 text-blue-600{% endif %} flex items-center justify-center text-2xl">
+                    <i class="fas fa-location-dot"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500 font-bold">当前座位</p>
+                    <h3 class="text-2xl font-black text-slate-900">{{ active_reservation.seat.seat_number }}</h3>
+                    <p class="text-sm text-slate-500">{{ active_reservation.seat.floor }}F · {{ active_reservation.seat.area }}{% if active_reservation.seat.has_power %} · 电源座{% endif %}</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="text-left sm:text-right">
+                    <p class="text-xs text-slate-400 font-bold">剩余时间</p>
+                    <p class="text-3xl font-black {% if show_warning %}text-red-600{% else %}text-blue-600{% endif %}">{{ remaining_minutes }}<span class="text-sm"> 分钟</span></p>
+                </div>
+                <a href="{{ url_for('seats.release_seat', reservation_id=active_reservation.id) }}" class="btn-danger">
+                    <i class="fas fa-door-open"></i> 退座
+                </a>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if seats %}
+    <section class="library-map">
+        <div class="map-header">
+            <div>
+                <p class="text-xs font-black text-slate-400 tracking-widest">FLOOR PLAN</p>
+                <h3 class="text-2xl font-black text-slate-900 mt-1">{{ floor_layout.name }} 平面布局</h3>
+            </div>
+            <div class="legend">
+                <span><i class="legend-dot free"></i>空闲</span>
+                <span><i class="legend-dot occupied"></i>使用中</span>
+                <span><i class="fas fa-bolt text-yellow-500"></i>电源</span>
+            </div>
+        </div>
+
+        <div class="landmark-row">
+            {% for item in floor_layout.landmarks %}
+            <div class="landmark {{ item.class }}">
+                <i class="fas {{ item.icon }}"></i>
+                <span>{{ item.label }}</span>
+            </div>
             {% endfor %}
         </div>
-    </div>
 
-    <!-- 当前预约卡片 -->
-    {% if active_reservation %}
-    <div class="max-w-2xl mx-auto mb-10">
-        <div class="relative overflow-hidden bg-white border-2 {% if show_warning %}border-red-400 ring-4 ring-red-50{% else %}border-blue-400{% endif %} rounded-3xl shadow-xl transition-all duration-500">
-
-            {% if show_warning %}
-            <div class="absolute top-0 left-0 w-full bg-gradient-to-r from-red-500 to-red-600 text-white text-[11px] font-bold py-1.5 text-center uppercase tracking-widest animate-pulse">
-                <i class="fas fa-exclamation-triangle mr-1.5"></i> 即将到期 请及时续约或退座
+        <div class="map-shell">
+            <div class="north-label">北侧窗边</div>
+            <div class="service-node">
+                <i class="fas fa-location-crosshairs"></i>
+                <span>中心通道</span>
             </div>
-            {% endif %}
-
-            <div class="p-6 {% if show_warning %}mt-7{% endif %}">
-                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div class="flex items-center">
-                        <div class="w-14 h-14 {% if show_warning %}bg-red-100 text-red-500{% else %}bg-blue-100 text-blue-600{% endif %} rounded-2xl flex items-center justify-center text-2xl mr-4 flex-shrink-0 shadow-inner">
-                            <i class="fas fa-couch"></i>
+            <div class="floor-grid">
+                {% for area_name in floor_layout.areas.keys() %}
+                    {% if area_name in areas_data %}
+                    {% set meta = floor_layout.areas.get(area_name) %}
+                    {% set row_count = areas_data[area_name]|length %}
+                    {% set area_free = seats|selectattr('area', 'equalto', area_name)|selectattr('status', 'equalto', 'free')|list|length %}
+                    {% set area_total = seats|selectattr('area', 'equalto', area_name)|list|length %}
+                    <article class="zone {{ meta.class }} {{ meta.grid }}">
+                        <div class="zone-head">
+                            <div>
+                                <h4>{{ meta.title }}</h4>
+                                <p>{{ meta.hint }}</p>
+                            </div>
+                            <div class="zone-count">
+                                <strong>{{ area_free }}</strong>
+                                <span>/ {{ area_total }}</span>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-xl font-extrabold text-gray-800">{{ active_reservation.seat.seat_number }}</h3>
-                            <p class="text-sm text-gray-400">
-                                <i class="fas fa-map-pin mr-1 text-gray-300"></i>
-                                {{ active_reservation.seat.floor }}F · {{ active_reservation.seat.area }}
-                                {% if active_reservation.seat.has_power %}
-                                <span class="inline-flex items-center ml-2 text-yellow-600"><i class="fas fa-bolt text-[10px] mr-0.5"></i>电源</span>
-                                {% endif %}
-                            </p>
+
+                        <div class="seat-rows {% if row_count <= 3 %}compact{% endif %}">
+                            {% for row_prefix, row_seats in areas_data[area_name].items() %}
+                            <div class="seat-row">
+                                <div class="row-tag">{{ row_prefix }}</div>
+                                <div class="row-line">
+                                    {% for seat in row_seats %}
+                                        {% if seat.status == 'free' %}
+                                        <a href="{{ url_for('seats.book_seat', seat_id=seat.id) }}"
+                                           class="seat-cell seat-free"
+                                           title="{{ seat.seat_number }} · {{ seat.area }}{% if seat.has_power %} · 电源{% endif %}">
+                                            {% if seat.has_power %}<i class="fas fa-bolt"></i>{% endif %}
+                                            <span>{{ seat.seat_number.split('-')[-1] }}</span>
+                                        </a>
+                                        {% else %}
+                                        <div class="seat-cell seat-occupied" title="{{ seat.seat_number }} · 使用中">
+                                            {% if seat.has_power %}<i class="fas fa-bolt"></i>{% endif %}
+                                            <span>{{ seat.seat_number.split('-')[-1] }}</span>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
-                    </div>
-
-                    <div class="text-right">
-                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wide mb-1">剩余使用时间</p>
-                        <p class="text-3xl font-mono font-black {% if show_warning %}text-red-500{% else %}text-blue-600{% endif %}">
-                            {{ remaining_minutes }}<span class="text-sm font-normal"> MIN</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- 剩余时间进度条 -->
-                <div class="mt-5">
-                    <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-500 {% if remaining_minutes <= 30 %}bg-gradient-to-r from-red-500 to-red-400{% elif remaining_minutes <= 60 %}bg-gradient-to-r from-yellow-500 to-yellow-400{% else %}bg-gradient-to-r from-green-500 to-green-400{% endif %}"
-                             style="width: {{ (remaining_minutes / 180 * 100) }}%"></div>
-                    </div>
-                    <div class="flex justify-between mt-1.5 text-[10px] text-gray-400">
-                        <span>0</span><span>180 min</span>
-                    </div>
-                </div>
-
-                <div class="mt-6 flex gap-3">
-                    <a href="{{ url_for('seats.release_seat', reservation_id=active_reservation.id) }}"
-                       class="flex-1 bg-gray-800 hover:bg-gray-900 text-white text-center py-3.5 rounded-2xl font-bold transition-all shadow-lg hover:shadow-xl active:scale-[0.98]">
-                        <i class="fas fa-door-open mr-2"></i>主动退座
-                    </a>
-                    {% if show_warning %}
-                    <button class="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-bold cursor-not-allowed opacity-70" disabled>
-                        <i class="fas fa-clock mr-2"></i>暂不支持续约
-                    </button>
+                    </article>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 图例 -->
-    <div class="flex flex-wrap justify-center gap-6 mb-10 text-sm">
-        <div class="flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-            <span class="w-3.5 h-3.5 rounded-md bg-gradient-to-br from-green-400 to-green-500 mr-2.5 shadow-sm"></span>
-            <span class="text-gray-600 font-medium">空闲可选</span>
-        </div>
-        <div class="flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-            <span class="w-3.5 h-3.5 rounded-md bg-gradient-to-br from-gray-300 to-gray-400 mr-2.5 shadow-sm"></span>
-            <span class="text-gray-600 font-medium">使用中</span>
-        </div>
-        <div class="flex items-center bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-            <i class="fas fa-bolt text-yellow-500 mr-2"></i>
-            <span class="text-gray-600 font-medium">配备电源插座</span>
-        </div>
-    </div>
-
-    <!-- 座位区域 -->
-    {% for area_name in areas %}
-    <div class="mb-14">
-        <!-- 区域标题 -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="bg-gradient-to-r from-gray-50 to-white px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="w-2 h-8 bg-primary rounded-full mr-4"></div>
-                    <div>
-                        <h3 class="text-lg font-extrabold text-gray-800">{{ area_name }}</h3>
-                    </div>
-                </div>
-                {% set area_free = seats|selectattr('area', 'equalto', area_name)|selectattr('status', 'equalto', 'free')|list|length %}
-                {% set area_total = seats|selectattr('area', 'equalto', area_name)|list|length %}
-                <div class="flex items-center gap-3 text-xs font-medium">
-                    <span class="px-3 py-1.5 bg-green-50 text-green-700 rounded-full">
-                        <i class="fas fa-check mr-1"></i>{{ area_free }} 空闲
-                    </span>
-                    <span class="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-full">
-                        {{ area_total }} 座位
-                    </span>
-                </div>
-            </div>
-
-            <!-- 座位网格 - 按行分组 -->
-            <div class="p-4">
-                {% set area_rows = areas_data[area_name] %}
-                {% for row_prefix, row_seats in area_rows.items() %}
-                <div class="mb-4 last:mb-0">
-                    <!-- 行标签 -->
-                    {% if row_prefix %}
-                    <div class="flex items-center mb-2">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-2 bg-gray-50 px-2 py-0.5 rounded">
-                            <i class="fas fa-grip-lines mr-1 text-gray-300"></i>{{ row_prefix }}
-                        </span>
-                        <span class="flex-1 h-px bg-gray-100"></span>
-                    </div>
-                    {% endif %}
-
-                    <!-- 该行的座位 -->
-                    <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
-                    {% for seat in row_seats %}
-                        {% if seat.status == 'free' %}
-                        <a href="{{ url_for('seats.book_seat', seat_id=seat.id) }}"
-                           class="group relative bg-gradient-to-b from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl py-3 flex flex-col items-center
-                                  hover:border-green-400 hover:shadow-lg hover:-translate-y-0.5 hover:bg-gradient-to-b hover:from-green-100 hover:to-emerald-100
-                                  transition-all duration-200 cursor-pointer active:scale-95">
-                            {% if seat.has_power %}
-                            <i class="fas fa-bolt text-yellow-500 absolute top-1 right-1.5 text-[10px] drop-shadow-sm" title="配备电源"></i>
-                            {% endif %}
-                            <span class="text-[11px] font-extrabold text-green-700 mb-1 group-hover:text-green-800">{{ seat.seat_number.split('-')[-1] }}</span>
-                            <div class="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shadow-sm group-hover:bg-white group-hover:shadow transition-all">
-                                <i class="fas fa-chair text-sm text-green-500 group-hover:text-green-600 group-hover:scale-110 transition-transform"></i>
-                            </div>
-                            <div class="mt-1.5 flex items-center gap-1">
-                                <span class="w-1 h-1 rounded-full bg-green-400"></span>
-                                <span class="text-[9px] text-green-500 font-medium">空闲</span>
-                            </div>
-                        </a>
-                        {% else %}
-                        <div class="relative bg-gradient-to-b from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl py-3 flex flex-col items-center opacity-60 cursor-not-allowed select-none">
-                            {% if seat.has_power %}
-                            <i class="fas fa-bolt text-gray-400 absolute top-1 right-1.5 text-[10px]" title="配备电源"></i>
-                            {% endif %}
-                            <span class="text-[11px] font-extrabold text-gray-400 mb-1">{{ seat.seat_number.split('-')[-1] }}</span>
-                            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                                <i class="fas fa-user text-sm text-gray-300"></i>
-                            </div>
-                            <div class="mt-1.5 flex items-center gap-1">
-                                <span class="w-1 h-1 rounded-full bg-gray-400"></span>
-                                <span class="text-[9px] text-gray-400 font-medium">使用中</span>
-                            </div>
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                    </div>
-                </div>
                 {% endfor %}
             </div>
+            <div class="south-label">南侧入口 / 楼梯电梯</div>
         </div>
-    </div>
+    </section>
     {% else %}
-    <!-- 空楼层提示 -->
-    <div class="text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-sm">
-        <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-            <i class="fas fa-tools text-4xl text-gray-300"></i>
-        </div>
-        <h3 class="text-lg font-bold text-gray-500 mb-2">该楼层暂未开放</h3>
-        <p class="text-gray-400">请切换至其他楼层查看可用座位</p>
-    </div>
-    {% endfor %}
+    <section class="empty-state py-24">
+        <i class="fas fa-map-location-dot text-5xl text-slate-300 mb-4 block"></i>
+        <h3 class="text-lg font-bold text-slate-500">该楼层暂未开放</h3>
+        <p class="text-slate-400 mt-2">请切换至其他楼层查看可用座位。</p>
+    </section>
+    {% endif %}
 </div>
 
 <style>
-    @keyframes pulse-warning {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+    .library-map {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
     }
-    .animate-pulse {
-        animation: pulse-warning 2s ease-in-out infinite;
+    .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 18px;
     }
-    @keyframes fade-in {
-        from { opacity: 0; transform: translateY(-8px); }
-        to { opacity: 1; transform: translateY(0); }
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
     }
-    .animate-fade-in {
-        animation: fade-in 0.3s ease-out;
+    .legend span,
+    .landmark {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+    .legend-dot.free { background: #10b981; }
+    .legend-dot.occupied { background: #94a3b8; }
+    .landmark-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .landmark {
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 900;
+        color: #334155;
+    }
+    .landmark-entry { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .landmark-service { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .landmark-window { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+    .landmark-stack { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+    .map-shell {
+        position: relative;
+        overflow: hidden;
+        border: 2px solid #cbd5e1;
+        border-radius: 22px;
+        padding: 42px 18px;
+        background:
+            linear-gradient(90deg, rgba(203,213,225,0.34) 1px, transparent 1px),
+            linear-gradient(180deg, rgba(203,213,225,0.34) 1px, transparent 1px),
+            #f8fafc;
+        background-size: 42px 42px;
+    }
+    .north-label,
+    .south-label {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        padding: 5px 12px;
+        z-index: 3;
+    }
+    .north-label { top: 10px; }
+    .south-label { bottom: 10px; }
+    .service-node {
+        position: absolute;
+        inset: auto auto 18px 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #475569;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 900;
+        z-index: 4;
+    }
+    .floor-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 14px;
+        align-items: stretch;
+    }
+    .zone {
+        border-radius: 18px;
+        border: 2px solid #e2e8f0;
+        padding: 14px;
+        background: rgba(255,255,255,0.94);
+        min-width: 0;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+    }
+    .area-window { border-color: #67e8f9; background: linear-gradient(180deg, #ecfeff 0%, #fff 100%); }
+    .area-central { border-color: #bfdbfe; background: linear-gradient(180deg, #eff6ff 0%, #fff 100%); }
+    .area-quiet { border-color: #bbf7d0; background: linear-gradient(180deg, #f0fdf4 0%, #fff 100%); }
+    .area-digital { border-color: #ddd6fe; background: linear-gradient(180deg, #f5f3ff 0%, #fff 100%); }
+    .area-discussion { border-color: #fed7aa; background: linear-gradient(180deg, #fff7ed 0%, #fff 100%); }
+    .zone-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .zone-head h4 {
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 950;
+        line-height: 1.25;
+    }
+    .zone-head p {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 4px;
+        line-height: 1.5;
+    }
+    .zone-count {
+        flex: 0 0 auto;
+        min-width: 58px;
+        text-align: center;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        padding: 7px 8px;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+    }
+    .zone-count strong {
+        color: #059669;
+        font-size: 20px;
+        line-height: 1;
+    }
+    .seat-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+    .seat-rows.compact {
+        gap: 12px;
+    }
+    .seat-row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+    }
+    .row-tag {
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 11px;
+        font-weight: 950;
+    }
+    .row-line {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+        gap: 6px;
+        min-width: 0;
+    }
+    .seat-cell {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        min-height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 950;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        border: 2px solid transparent;
+    }
+    .seat-cell .fa-bolt {
+        position: absolute;
+        top: 3px;
+        right: 4px;
+        font-size: 8px;
+        color: #eab308;
+    }
+    .seat-free {
+        background: #ecfdf5;
+        color: #047857;
+        border-color: #a7f3d0;
+    }
+    .seat-free:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(16, 185, 129, 0.18);
+        border-color: #10b981;
+    }
+    .seat-occupied {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border-color: #cbd5e1;
+        cursor: not-allowed;
+    }
+    @media (max-width: 1024px) {
+        .landmark-row,
+        .floor-grid {
+            grid-template-columns: 1fr;
+        }
+        .zone {
+            grid-column: auto !important;
+        }
+        .map-header {
+            flex-direction: column;
+        }
+        .legend {
+            justify-content: flex-start;
+        }
+    }
+    @media (max-width: 640px) {
+        .library-map {
+            padding: 16px;
+            border-radius: 18px;
+        }
+        .map-shell {
+            padding: 40px 10px;
+        }
+        .seat-row {
+            grid-template-columns: 28px minmax(0, 1fr);
+            gap: 6px;
+        }
+        .row-line {
+            grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+            gap: 5px;
+        }
+        .seat-cell {
+            min-height: 28px;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+        .service-node {
+            display: none;
+        }
     }
 </style>
 {% endblock %}

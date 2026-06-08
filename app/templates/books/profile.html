@@ -99,6 +99,37 @@
 
         <div class="space-y-6">
             <div class="app-card p-6">
+                <h3 class="text-xl font-black text-slate-900 mb-4">账号信息</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">身份</span>
+                        <span class="font-bold text-slate-800">
+                            {% if session.get('account_type') == 'student' %}学生{% elif session.get('account_type') == 'teacher' %}教师{% else %}管理员{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">{% if session.get('account_type') == 'teacher' %}工号{% elif session.get('account_type') == 'student' %}学号{% else %}账号{% endif %}</span>
+                        <span class="font-bold text-slate-800">
+                            {% if session.get('account_type') == 'student' %}{{ account.student_no }}{% elif session.get('account_type') == 'teacher' %}{{ account.job_no }}{% else %}{{ account.username }}{% endif %}
+                        </span>
+                    </div>
+                    {% if session.get('account_type') in ['student', 'teacher'] %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">姓名</span>
+                        <span class="font-bold text-slate-800">{{ account.name }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">性别</span>
+                        <span class="font-bold text-slate-800">{{ account.gender or '-' }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">专业</span>
+                        <span class="font-bold text-slate-800">{{ account.major or account.department or '-' }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="app-card p-6">
                 <h3 class="text-xl font-black text-slate-900 mb-4">当前座位</h3>
                 {% if active_seat %}
                 <div class="rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-5">

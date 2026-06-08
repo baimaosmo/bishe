@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980" role="img" aria-labelledby="title desc">
+  <title id="title">智慧图书馆管理系统用例图</title>
+  <desc id="desc">根据毕业设计报告绘制的智慧图书馆管理系统 UML 用例图，包含读者用户和管理员两类主要参与者。</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #1f2a33; }
+      .label { font: 600 18px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #1f2a33; }
+      .small { font: 14px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #52616d; }
+      .usecase { fill: #f8fbff; stroke: #4f6f91; stroke-width: 2; }
+      .boundary { fill: #ffffff; stroke: #8a96a3; stroke-width: 2.4; rx: 18; }
+      .actor-line { stroke: #293845; stroke-width: 3; stroke-linecap: round; fill: none; }
+      .assoc { stroke: #5d6b78; stroke-width: 1.8; fill: none; }
+      .rel { stroke: #7a8793; stroke-width: 1.6; fill: none; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .reltext { font: 13px Arial, sans-serif; fill: #667481; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#7a8793"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="980" fill="#ffffff"/>
+  <text x="700" y="44" class="title" text-anchor="middle">智慧图书馆管理系统用例图</text>
+
+  <rect x="300" y="78" width="800" height="840" class="boundary"/>
+  <text x="700" y="112" class="label" text-anchor="middle">智慧图书馆管理系统</text>
+
+  <!-- Actors -->
+  <g transform="translate(128 455)">
+    <circle cx="0" cy="-70" r="24" class="actor-line"/>
+    <path d="M0,-46 L0,34 M-52,-16 L52,-16 M0,34 L-40,88 M0,34 L40,88" class="actor-line"/>
+    <text x="0" y="128" class="label" text-anchor="middle">读者用户</text>
+    <text x="0" y="151" class="small" text-anchor="middle">普通注册用户 / 学生用户 / 教师用户</text>
+  </g>
+  <g transform="translate(1260 455)">
+    <circle cx="0" cy="-70" r="24" class="actor-line"/>
+    <path d="M0,-46 L0,34 M-52,-16 L52,-16 M0,34 L-40,88 M0,34 L40,88" class="actor-line"/>
+    <text x="0" y="128" class="label" text-anchor="middle">管理员</text>
+  </g>
+
+  <!-- Use cases: reader side -->
+  <ellipse id="uc-register" cx="515" cy="190" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="186" class="label" text-anchor="middle">注册账号</text>
+  <text x="515" y="207" class="small" text-anchor="middle">普通注册用户</text>
+
+  <ellipse id="uc-search" cx="515" cy="285" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="291" class="label" text-anchor="middle">检索与查看图书</text>
+
+  <ellipse id="uc-borrow" cx="515" cy="380" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="386" class="label" text-anchor="middle">借阅与归还图书</text>
+
+  <ellipse id="uc-favorite" cx="515" cy="475" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="481" class="label" text-anchor="middle">收藏与评价图书</text>
+
+  <ellipse id="uc-recommend" cx="515" cy="570" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="576" class="label" text-anchor="middle">查看推荐书单</text>
+
+  <ellipse id="uc-seat" cx="515" cy="665" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="671" class="label" text-anchor="middle">预约与释放座位</text>
+
+  <ellipse id="uc-drift-user" cx="515" cy="760" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="766" class="label" text-anchor="middle">参与图书漂流</text>
+
+  <ellipse id="uc-profile" cx="515" cy="855" rx="118" ry="36" class="usecase"/>
+  <text x="515" y="861" class="label" text-anchor="middle">维护个人信息</text>
+
+  <!-- Shared and AI use cases -->
+  <ellipse id="uc-login" cx="700" cy="165" rx="108" ry="36" class="usecase"/>
+  <text x="700" y="171" class="label" text-anchor="middle">登录系统</text>
+
+  <ellipse id="uc-ai" cx="700" cy="855" rx="108" ry="36" class="usecase"/>
+  <text x="700" y="861" class="label" text-anchor="middle">AI 智能检索</text>
+
+  <!-- Use cases: admin side -->
+  <ellipse id="uc-book-manage" cx="885" cy="250" rx="122" ry="36" class="usecase"/>
+  <text x="885" y="256" class="label" text-anchor="middle">图书信息管理</text>
+
+  <ellipse id="uc-user-manage" cx="885" cy="345" rx="122" ry="36" class="usecase"/>
+  <text x="885" y="351" class="label" text-anchor="middle">用户账号管理</text>
+
+  <ellipse id="uc-import" cx="885" cy="440" rx="122" ry="36" class="usecase"/>
+  <text x="885" y="446" class="label" text-anchor="middle">批量导入学生账号</text>
+
+  <ellipse id="uc-data-view" cx="885" cy="535" rx="132" ry="36" class="usecase"/>
+  <text x="885" y="541" class="label" text-anchor="middle">借阅与座位数据查看</text>
+
+  <ellipse id="uc-audit" cx="885" cy="630" rx="122" ry="36" class="usecase"/>
+  <text x="885" y="636" class="label" text-anchor="middle">图书评价审核</text>
+
+  <ellipse id="uc-drift-manage" cx="885" cy="725" rx="122" ry="36" class="usecase"/>
+  <text x="885" y="731" class="label" text-anchor="middle">图书漂流管理</text>
+
+  <ellipse id="uc-dashboard" cx="885" cy="820" rx="122" ry="36" class="usecase"/>
+  <text x="885" y="826" class="label" text-anchor="middle">数据统计分析</text>
+
+  <!-- Actor associations -->
+  <path d="M180 439 L595 172" class="assoc"/>
+  <path d="M180 459 L397 190" class="assoc"/>
+  <path d="M180 477 L397 285" class="assoc"/>
+  <path d="M180 495 L397 380" class="assoc"/>
+  <path d="M180 513 L397 475" class="assoc"/>
+  <path d="M180 531 L397 570" class="assoc"/>
+  <path d="M180 549 L397 665" class="assoc"/>
+  <path d="M180 567 L397 760" class="assoc"/>
+  <path d="M180 585 L397 855" class="assoc"/>
+  <path d="M180 603 L594 855" class="assoc"/>
+
+  <path d="M1208 438 L805 172" class="assoc"/>
+  <path d="M1208 463 L1007 250" class="assoc"/>
+  <path d="M1208 489 L1007 345" class="assoc"/>
+  <path d="M1208 515 L1007 440" class="assoc"/>
+  <path d="M1208 541 L1017 535" class="assoc"/>
+  <path d="M1208 567 L1007 630" class="assoc"/>
+  <path d="M1208 593 L1007 725" class="assoc"/>
+  <path d="M1208 619 L1007 820" class="assoc"/>
+
+  <!-- Include / extend relations -->
+  <path d="M515 344 L515 321" class="rel"/>
+  <text x="529" y="337" class="reltext">&lt;&lt;include&gt;&gt;</text>
+
+  <path d="M515 439 L515 416" class="rel"/>
+  <text x="529" y="432" class="reltext">&lt;&lt;extend&gt;&gt;</text>
+
+  <path d="M560 540 L560 319" class="rel"/>
+  <text x="574" y="432" class="reltext">&lt;&lt;include&gt;&gt;</text>
+
+  <path d="M806 617 C700 585 640 542 610 500" class="rel"/>
+  <text x="650" y="594" class="reltext">&lt;&lt;include&gt;&gt;</text>
+
+  <path d="M885 404 L885 381" class="rel"/>
+  <text x="899" y="397" class="reltext">&lt;&lt;include&gt;&gt;</text>
+
+  <path d="M885 784 L885 571" class="rel"/>
+  <text x="899" y="690" class="reltext">&lt;&lt;include&gt;&gt;</text>
+</svg>

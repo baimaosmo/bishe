@@ -3,49 +3,104 @@
 {% block title %}AI 智能匹配 - 智能图书管理系统{% endblock %}
 
 {% block content %}
-<div class="fade-in max-w-5xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-    
-    <div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-4">
-        <div class="flex items-center">
-            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mr-4 shadow-sm">
-                <i class="fas fa-brain"></i>
-            </div>
+<div class="fade-in max-w-7xl mx-auto space-y-6">
+    <section class="page-hero ai-search-hero">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
-                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                    AI 智能语义检书
-                    <span class="ml-3 px-2.5 py-0.5 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-full font-mono">Powered by AI</span>
-                </h2>
-                <p class="text-sm text-gray-500 mt-1">用自然语言描述您的需求，AI 将为您在馆藏中精准寻书。（支持连续多轮对话）</p>
+                <p class="text-blue-100 text-sm font-bold mb-2">AI SEMANTIC SEARCH</p>
+                <h2 class="page-title">AI 智能语义检书</h2>
+                <p class="page-subtitle">直接描述课程、兴趣、阅读目标或情绪需求，智能助手会基于馆内真实藏书给出推荐。</p>
+            </div>
+            <div class="hero-badges">
+                <span><i class="fas fa-database"></i> 真实馆藏</span>
+                <span><i class="fas fa-comments"></i> 多轮追问</span>
+                <span><i class="fas fa-wand-magic-sparkles"></i> 语义匹配</span>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div id="chat-container" class="flex-1 overflow-y-auto bg-gray-50 rounded-2xl p-6 shadow-inner space-y-6 border border-gray-100 mb-4">
-        <div class="flex items-start">
-            <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 shadow-md">
-                <i class="fas fa-robot text-lg"></i>
+    <section class="ai-workbench">
+        <aside class="search-side">
+            <div class="side-panel">
+                <div class="assistant-orb">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>检索助手</h3>
+                <p>适合查找“我想学什么”“我现在适合读什么”“哪本更适合新手”这类模糊需求。</p>
             </div>
-            <div class="ml-4 bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 text-sm max-w-[80%]">
-                您好！我是图书馆智能助手。您可以这样问我：<br>
-                <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-500">
-                    <li>"我想了解一下人工智能的发展历史，有什么书推荐？"</li>
-                    <li>"最近压力有点大，想看点能放松心情的小说。"</li>
-                    <li>"这几本书里，哪一本最适合完全没有基础的新手？"</li>
-                </ul>
-            </div>
-        </div>
-    </div>
 
-    <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-200 flex items-center">
-        <input type="text" id="user-input" 
-               class="flex-1 px-4 py-3 bg-transparent outline-none text-gray-700 placeholder-gray-400" 
-               placeholder="描述您想寻找什么样的书籍，或对上面的推荐进行追问..."
-               onkeypress="if(event.key === 'Enter') sendQuery()">
-        <button onclick="sendQuery()" id="send-btn"
-                class="bg-primary text-white w-12 h-12 rounded-xl hover:bg-blue-800 transition shadow-md flex items-center justify-center">
-            <i class="fas fa-paper-plane"></i>
-        </button>
-    </div>
+            <div class="side-panel">
+                <div class="side-title">
+                    <i class="fas fa-bolt"></i>
+                    <span>快捷提问</span>
+                </div>
+                <div class="prompt-list">
+                    <button type="button" onclick="fillPrompt('我想系统学习人工智能，有哪些适合入门的书？')">人工智能入门</button>
+                    <button type="button" onclick="fillPrompt('我最近压力比较大，想看一些轻松治愈的书。')">轻松治愈阅读</button>
+                    <button type="button" onclick="fillPrompt('请推荐适合软件工程专业学生阅读的数据库或编程书。')">专业课程拓展</button>
+                    <button type="button" onclick="fillPrompt('我没有基础，想了解计算机网络，哪本书更适合？')">零基础学习</button>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div class="side-title">
+                    <i class="fas fa-circle-info"></i>
+                    <span>使用状态</span>
+                </div>
+                <div class="status-grid">
+                    <div>
+                        <strong id="round-count">0</strong>
+                        <span>轮对话</span>
+                    </div>
+                    <div>
+                        <strong>10</strong>
+                        <span>条记忆</span>
+                    </div>
+                </div>
+                <button type="button" class="clear-btn" onclick="clearChat()">
+                    <i class="fas fa-trash-can"></i> 清空当前会话
+                </button>
+            </div>
+        </aside>
+
+        <main class="chat-panel">
+            <div class="chat-toolbar">
+                <div>
+                    <h3>馆藏智能问答</h3>
+                    <p>回答会优先推荐馆内已录入图书，并说明推荐理由。</p>
+                </div>
+                <span class="live-pill"><i class="fas fa-sparkles"></i> 智能助手 </span>
+            </div>
+
+            <div id="chat-container" class="chat-container">
+                <div class="message-row ai-message welcome-message">
+                    <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="message-bubble ai-bubble">
+                        <p class="font-bold text-slate-900 mb-2">您好，我是图书馆智能助手。</p>
+                        <p>可以告诉我你的课程、兴趣、阅读目标，或者想解决的问题。我会帮你在馆藏中匹配合适的书。</p>
+                        <div class="example-chips">
+                            <button type="button" onclick="fillPrompt('我想了解人工智能的发展历史，有什么书推荐？')">人工智能发展历史</button>
+                            <button type="button" onclick="fillPrompt('推荐几本适合考研复习放松时阅读的书。')">考研放松阅读</button>
+                            <button type="button" onclick="fillPrompt('我想提升 Python 编程能力，馆内有哪些书？')">Python 编程</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-shell">
+                <div class="input-inner">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="text" id="user-input"
+                           placeholder="描述您想寻找什么样的书籍，或对上面的推荐继续追问..."
+                           onkeypress="if(event.key === 'Enter') sendQuery()">
+                    <button onclick="sendQuery()" id="send-btn" title="发送">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <p class="input-tip">示例：我想了解数据库原理，但基础比较弱，请推荐适合我的书。</p>
+            </div>
+        </main>
+    </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -53,11 +108,10 @@
     const chatContainer = document.getElementById('chat-container');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
-    
-    // 【核心修改 1】：初始化时优先从 sessionStorage 读取，如果没有则为空数组
+    const roundCount = document.getElementById('round-count');
+
     let chatHistory = JSON.parse(sessionStorage.getItem('ai_chat_history')) || [];
 
-    // 【核心修改 2】：页面一加载，就把存起来的历史记录渲染出来
     window.addEventListener('DOMContentLoaded', () => {
         if (chatHistory.length > 0) {
             chatHistory.forEach(msg => {
@@ -68,50 +122,59 @@
                 }
             });
         }
+        updateRoundCount();
     });
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updateRoundCount() {
+        const userMessages = chatHistory.filter(msg => msg.role === 'user').length;
+        roundCount.textContent = userMessages;
+    }
+
+    function fillPrompt(text) {
+        userInput.value = text;
+        userInput.focus();
+    }
+
+    function clearChat() {
+        chatHistory = [];
+        sessionStorage.removeItem('ai_chat_history');
+        chatContainer.querySelectorAll('.message-row:not(.welcome-message)').forEach(node => node.remove());
+        updateRoundCount();
+        userInput.focus();
+    }
 
     function appendMessage(role, content) {
         const div = document.createElement('div');
-        div.className = "flex items-start " + (role === 'user' ? "justify-end" : "");
-        
-        let innerHTML = '';
+        div.className = "message-row " + (role === 'user' ? "user-message" : "ai-message");
+
         if (role === 'user') {
-            innerHTML = `
-                <div class="mr-4 bg-blue-500 text-white p-4 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[80%]">
-                    ${content}
-                </div>
-                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-user text-gray-500"></i>
-                </div>
+            div.innerHTML = `
+                <div class="message-bubble user-bubble">${escapeHtml(content)}</div>
+                <div class="avatar user-avatar"><i class="fas fa-user"></i></div>
             `;
         } else if (role === 'ai') {
-            const parsedContent = marked.parse(content);
-            innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 shadow-md">
-                    <i class="fas fa-robot text-lg"></i>
-                </div>
-                <div class="ml-4 bg-white p-5 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-700 text-sm max-w-[80%] prose prose-sm prose-blue">
-                    ${parsedContent}
-                </div>
+            div.innerHTML = `
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="message-bubble ai-bubble prose prose-sm prose-blue">${marked.parse(content)}</div>
             `;
         } else if (role === 'loading') {
             div.id = 'loading-bubble';
-            innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 shadow-md">
-                    <i class="fas fa-robot text-lg"></i>
-                </div>
-                <div class="ml-4 bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-gray-500 text-sm flex items-center space-x-2">
-                    <span>智能助手正在为您寻找匹配的馆藏资源</span>
-                    <div class="flex space-x-1">
-                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
-                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
-                    </div>
+            div.className = "message-row ai-message";
+            div.innerHTML = `
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="message-bubble ai-bubble loading-bubble">
+                    <span>正在分析馆藏并生成推荐</span>
+                    <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
                 </div>
             `;
         }
-        
-        div.innerHTML = innerHTML;
+
         chatContainer.appendChild(div);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
@@ -121,13 +184,14 @@
         if (!query) return;
 
         chatHistory.push({ "role": "user", "content": query });
-        // 【核心修改 3】：用户发消息后，实时保存到 sessionStorage
         sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
+        updateRoundCount();
 
         appendMessage('user', query);
         userInput.value = '';
         userInput.disabled = true;
         sendBtn.disabled = true;
+        sendBtn.classList.add('is-loading');
 
         appendMessage('loading', '');
 
@@ -137,36 +201,399 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ history: chatHistory })
             });
-            
+
             const data = await response.json();
-            document.getElementById('loading-bubble').remove();
+            const loadingBubble = document.getElementById('loading-bubble');
+            if (loadingBubble) loadingBubble.remove();
 
             if (response.ok) {
                 chatHistory.push({ "role": "assistant", "content": data.reply });
-                // 【核心修改 4】：AI 回复后，再次保存到 sessionStorage
                 sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
                 appendMessage('ai', data.reply);
             } else {
-                chatHistory.pop(); 
+                chatHistory.pop();
                 sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
+                updateRoundCount();
                 appendMessage('ai', `**抱歉，发生错误：** ${data.error}`);
             }
         } catch (error) {
-            document.getElementById('loading-bubble').remove();
+            const loadingBubble = document.getElementById('loading-bubble');
+            if (loadingBubble) loadingBubble.remove();
             chatHistory.pop();
             sessionStorage.setItem('ai_chat_history', JSON.stringify(chatHistory));
-            appendMessage('ai', '**网络请求失败**，请检查控制台或稍后再试。');
+            updateRoundCount();
+            appendMessage('ai', '**网络请求失败**，请检查网络或稍后再试。');
         } finally {
             userInput.disabled = false;
             sendBtn.disabled = false;
+            sendBtn.classList.remove('is-loading');
             userInput.focus();
         }
     }
 </script>
 
 <style>
-    .prose p { margin-bottom: 0.5em; }
+    .ai-search-hero .hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .hero-badges span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 9px 13px;
+        border-radius: 14px;
+        color: #e0f2fe;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.16);
+        font-size: 12px;
+        font-weight: 900;
+    }
+    .ai-workbench {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: 20px;
+        min-height: calc(100vh - 18rem);
+    }
+    .search-side,
+    .chat-panel {
+        min-width: 0;
+    }
+    .search-side {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .side-panel,
+    .chat-panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+    }
+    .side-panel {
+        padding: 18px;
+    }
+    .assistant-orb {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 24px;
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
+        margin-bottom: 14px;
+    }
+    .side-panel h3 {
+        color: #0f172a;
+        font-size: 20px;
+        font-weight: 950;
+        margin-bottom: 6px;
+    }
+    .side-panel p {
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+    .side-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 950;
+        margin-bottom: 12px;
+    }
+    .side-title i {
+        color: #2563eb;
+    }
+    .prompt-list {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+    .prompt-list button,
+    .example-chips button {
+        text-align: left;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 12px;
+        font-weight: 850;
+        transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+    .prompt-list button:hover,
+    .example-chips button:hover {
+        background: #dbeafe;
+        border-color: #93c5fd;
+        transform: translateY(-1px);
+    }
+    .status-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .status-grid div {
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 12px;
+    }
+    .status-grid strong {
+        display: block;
+        color: #0f172a;
+        font-size: 24px;
+        line-height: 1;
+        font-weight: 950;
+    }
+    .status-grid span {
+        display: block;
+        color: #64748b;
+        font-size: 11px;
+        margin-top: 6px;
+        font-weight: 800;
+    }
+    .clear-btn {
+        width: 100%;
+        min-height: 40px;
+        border-radius: 13px;
+        border: 1px solid #fee2e2;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 900;
+        transition: background 0.18s ease, border-color 0.18s ease;
+    }
+    .clear-btn:hover {
+        background: #fee2e2;
+        border-color: #fecaca;
+    }
+    .chat-panel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .chat-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid #e5e7eb;
+        background: linear-gradient(180deg, #fff, #f8fafc);
+    }
+    .chat-toolbar h3 {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+    .chat-toolbar p {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 3px;
+    }
+    .live-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 34px;
+        padding: 8px 11px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #4338ca;
+        border: 1px solid #c7d2fe;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+    .chat-container {
+        flex: 1;
+        min-height: 460px;
+        max-height: calc(100vh - 25rem);
+        overflow-y: auto;
+        padding: 22px;
+        background:
+            linear-gradient(90deg, rgba(226,232,240,0.42) 1px, transparent 1px),
+            linear-gradient(180deg, rgba(226,232,240,0.42) 1px, transparent 1px),
+            #f8fafc;
+        background-size: 34px 34px;
+    }
+    .message-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+    .user-message {
+        justify-content: flex-end;
+    }
+    .avatar {
+        flex: 0 0 auto;
+        width: 42px;
+        height: 42px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ai-avatar {
+        color: #fff;
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+    }
+    .user-avatar {
+        color: #334155;
+        background: #e2e8f0;
+    }
+    .message-bubble {
+        max-width: min(76%, 760px);
+        border-radius: 18px;
+        padding: 15px 17px;
+        font-size: 14px;
+        line-height: 1.75;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+    .ai-bubble {
+        color: #334155;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-top-left-radius: 6px;
+    }
+    .user-bubble {
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border-top-right-radius: 6px;
+    }
+    .example-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .loading-bubble {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #64748b;
+        font-weight: 800;
+    }
+    .typing-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #94a3b8;
+        animation: typing 1s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(3) { animation-delay: 0.18s; }
+    .typing-dot:nth-child(4) { animation-delay: 0.36s; }
+    @keyframes typing {
+        0%, 100% { transform: translateY(0); opacity: 0.45; }
+        50% { transform: translateY(-4px); opacity: 1; }
+    }
+    .input-shell {
+        padding: 16px;
+        border-top: 1px solid #e5e7eb;
+        background: #fff;
+    }
+    .input-inner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 58px;
+        border: 2px solid #dbeafe;
+        border-radius: 18px;
+        padding: 0 8px 0 16px;
+        background: #f8fbff;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .input-inner:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        background: #fff;
+    }
+    .input-inner > i {
+        color: #60a5fa;
+    }
+    .input-inner input {
+        flex: 1;
+        min-width: 0;
+        height: 54px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #0f172a;
+        font-size: 14px;
+    }
+    .input-inner button {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        color: #fff;
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+        transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+    .input-inner button:hover {
+        transform: translateY(-1px);
+    }
+    .input-inner button:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .input-tip {
+        color: #94a3b8;
+        font-size: 12px;
+        margin-top: 8px;
+        padding-left: 4px;
+    }
+    .prose p { margin-bottom: 0.65em; }
     .prose strong { color: #1e3a8a; }
-    .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+    .prose ul,
+    .prose ol { padding-left: 1.4em; margin: 0.6em 0; }
+    .prose li { margin: 0.25em 0; }
+    .prose h1,
+    .prose h2,
+    .prose h3 { color: #0f172a; font-weight: 950; margin: 0.7em 0 0.35em; }
+    @media (max-width: 1024px) {
+        .ai-workbench {
+            grid-template-columns: 1fr;
+        }
+        .search-side {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .chat-container {
+            max-height: none;
+        }
+    }
+    @media (max-width: 760px) {
+        .search-side {
+            grid-template-columns: 1fr;
+        }
+        .chat-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+        .message-bubble {
+            max-width: calc(100% - 54px);
+        }
+        .chat-container {
+            min-height: 420px;
+            padding: 16px;
+        }
+        .hero-badges span {
+            width: 100%;
+        }
+    }
 </style>
 {% endblock %}

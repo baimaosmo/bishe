@@ -1,0 +1,147 @@
+数据库表结构设计（Word 可粘贴表格版）
+
+说明：以下表格使用制表符分隔，复制到 Word 后可直接粘贴为表格；如未自动成表，可在 Word 中选择“插入 -> 表格 -> 文本转换成表格”，分隔符选择“制表符”。
+
+1. users：用户信息表如表 4-1 所示。
+表 4-1 用户信息表 users
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	用户编号
+username	varchar(50)	No	No	Not null	用户名
+email	varchar(120)	No	No	Null	邮箱
+password_hash	varchar(255)	No	No	Not null	加密后的密码
+role	varchar(20)	No	No	Null	角色，user/admin
+avatar	varchar(255)	No	No	Null	头像路径
+
+2. students：学生信息表如表 4-2 所示。
+表 4-2 学生信息表 students
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	学生编号
+student_no	varchar(20)	No	No	Not null	学号
+name	varchar(50)	No	No	Not null	学生姓名
+gender	varchar(10)	No	No	Null	性别
+major	varchar(80)	No	No	Null	专业
+department	varchar(50)	No	No	Null	院系
+password_hash	varchar(255)	No	No	Not null	加密后的密码
+avatar	varchar(255)	No	No	Null	头像路径
+
+3. teachers：教师信息表如表 4-3 所示。
+表 4-3 教师信息表 teachers
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	教师编号
+job_no	varchar(20)	No	No	Not null	工号
+name	varchar(50)	No	No	Not null	教师姓名
+gender	varchar(10)	No	No	Null	性别
+major	varchar(80)	No	No	Null	专业或研究方向
+department	varchar(50)	No	No	Null	院系或部门
+password_hash	varchar(255)	No	No	Not null	加密后的密码
+avatar	varchar(255)	No	No	Null	头像路径
+
+4. publishers：出版社信息表如表 4-4 所示。
+表 4-4 出版社信息表 publishers
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	出版社编号
+name	varchar(100)	No	No	Not null	出版社名称
+created_at	datetime	No	No	Null	创建时间
+
+5. books：图书信息表如表 4-5 所示。
+表 4-5 图书信息表 books
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	图书编号
+title	varchar(100)	No	No	Not null	书名
+author	varchar(50)	No	No	Not null	作者
+publisher	varchar(100)	No	No	Null	出版社
+isbn	varchar(20)	No	No	Not null	ISBN 号
+category	varchar(50)	No	No	Null	图书分类
+floor	int	No	No	Null	所在楼层
+area	varchar(20)	No	No	Null	所在区域
+shelf	varchar(20)	No	No	Null	书架号
+status	varchar(20)	No	No	Null	图书状态，available/borrowed
+description	text	No	No	Null	图书简介
+cover_image	varchar(255)	No	No	Null	封面图片路径
+add_time	datetime	No	No	Null	入库时间
+
+6. borrow_records：借阅记录表如表 4-6 所示。
+表 4-6 借阅记录表 borrow_records
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	借阅记录编号
+user_id	int	No	Yes	Null	普通用户编号，关联 users.id
+student_id	int	No	Yes	Null	学生编号，关联 students.id
+teacher_id	int	No	Yes	Null	教师编号，关联 teachers.id
+book_id	int	No	Yes	Not null	图书编号，关联 books.id
+borrow_time	datetime	No	No	Null	借阅时间
+return_time	datetime	No	No	Null	归还时间
+status	varchar(20)	No	No	Null	借阅状态，borrowing/returned
+
+7. seats：座位信息表如表 4-7 所示。
+表 4-7 座位信息表 seats
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	座位编号
+floor	int	No	No	Not null	所在楼层
+area	varchar(50)	No	No	Not null	所属区域
+seat_number	varchar(20)	No	No	Not null	座位号
+has_power	tinyint(1)	No	No	Null	是否有电源
+status	varchar(20)	No	No	Null	座位状态，free/occupied
+
+8. seat_reservations：座位预约记录表如表 4-8 所示。
+表 4-8 座位预约记录表 seat_reservations
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	预约记录编号
+user_id	int	No	Yes	Null	普通用户编号，关联 users.id
+student_id	int	No	Yes	Null	学生编号，关联 students.id
+teacher_id	int	No	Yes	Null	教师编号，关联 teachers.id
+seat_id	int	No	Yes	Not null	座位编号，关联 seats.id
+start_time	datetime	No	No	Null	入座时间
+end_time	datetime	No	No	Null	离座时间
+status	varchar(20)	No	No	Null	预约状态，active/completed
+
+9. drift_books：漂流图书信息表如表 4-9 所示。
+表 4-9 漂流图书信息表 drift_books
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	漂流图书编号
+title	varchar(100)	No	No	Not null	书名
+course_related	varchar(100)	No	No	Null	关联课程
+condition	varchar(20)	No	No	Null	新旧程度
+description	text	No	No	Null	补充描述或交换条件
+status	varchar(20)	No	No	Null	漂流状态，drifting/claimed
+publish_time	datetime	No	No	Null	发布时间
+provider_user_id	int	No	Yes	Null	提供者普通用户编号，关联 users.id
+provider_student_id	int	No	Yes	Null	提供者学生编号，关联 students.id
+provider_teacher_id	int	No	Yes	Null	提供者教师编号，关联 teachers.id
+receiver_user_id	int	No	Yes	Null	领取者普通用户编号，关联 users.id
+receiver_student_id	int	No	Yes	Null	领取者学生编号，关联 students.id
+receiver_teacher_id	int	No	Yes	Null	领取者教师编号，关联 teachers.id
+
+10. drift_requests：漂流图书申请表如表 4-10 所示。
+表 4-10 漂流图书申请表 drift_requests
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	申请编号
+book_id	int	No	Yes	Not null	漂流图书编号，关联 drift_books.id
+message	text	No	No	Null	给提供者的留言
+status	varchar(20)	No	No	Null	申请状态，pending/accepted/rejected
+create_time	datetime	No	No	Null	申请时间
+receiver_user_id	int	No	Yes	Null	申请者普通用户编号，关联 users.id
+receiver_student_id	int	No	Yes	Null	申请者学生编号，关联 students.id
+receiver_teacher_id	int	No	Yes	Null	申请者教师编号，关联 teachers.id
+
+11. book_favorites：图书收藏表如表 4-11 所示。
+表 4-11 图书收藏表 book_favorites
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	收藏编号
+book_id	int	No	Yes	Not null	图书编号，关联 books.id
+user_id	int	No	Yes	Null	普通用户编号，关联 users.id
+student_id	int	No	Yes	Null	学生编号，关联 students.id
+teacher_id	int	No	Yes	Null	教师编号，关联 teachers.id
+created_at	datetime	No	No	Null	收藏时间
+
+12. book_reviews：图书评价表如表 4-12 所示。
+表 4-12 图书评价表 book_reviews
+字段名	数据类型	主键	外键	可否为空	信息备注
+id	int	Yes	No	Not null	评价编号
+book_id	int	No	Yes	Not null	图书编号，关联 books.id
+user_id	int	No	Yes	Null	普通用户编号，关联 users.id
+student_id	int	No	Yes	Null	学生编号，关联 students.id
+teacher_id	int	No	Yes	Null	教师编号，关联 teachers.id
+rating	int	No	No	Not null	评分
+content	text	No	No	Not null	评价内容
+status	varchar(20)	No	No	Null	审核状态，pending/approved/rejected
+created_at	datetime	No	No	Null	评价时间
